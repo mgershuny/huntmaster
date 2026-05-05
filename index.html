@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>HuntMaster — AR Treasure Hunts in Minutes</title>
+<meta name="generator" content="HuntMaster v1 deployed via Cowork">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ---------- Design system ---------- */
+  :root {
+    --primary: #7c3aed;       /* violet */
+    --primary-dark: #5b21b6;
+    --accent: #f59e0b;        /* amber */
+    --accent-2: #ec4899;      /* pink */
+    --mint: #10b981;
+    --sky: #0ea5e9;
+    --cream: #fffaf0;
+    --ink: #1f1147;
+    --ink-soft: #4c3c80;
+    --muted: #8b7fb8;
+    --line: #ece6f7;
+    --card: #ffffff;
+    --shadow-sm: 0 2px 6px rgba(40, 20, 80, 0.08);
+    --shadow-md: 0 8px 24px rgba(40, 20, 80, 0.12);
+    --shadow-lg: 0 18px 50px rgba(40, 20, 80, 0.18);
+    --radius-sm: 12px;
+    --radius: 18px;
+    --radius-lg: 28px;
+    --radius-xl: 36px;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--cream);
+    color: var(--ink);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100%;
+  }
+  body {
+    background:
+      radial-gradient(circle at 10% 0%, rgba(236,72,153,0.10), transparent 40%),
+      radial-gradient(circle at 90% 10%, rgba(124,58,237,0.10), transparent 40%),
+      radial-gradient(circle at 50% 100%, rgba(245,158,11,0.10), transparent 50%),
+      var(--cream);
+    min-height: 100vh;
+  }
+  h1, h2, h3, h4, .display { font-family: 'Fredoka', 'Inter', sans-serif; letter-spacing: -0.01em; }
+  h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 700; margin: 0 0 8px; }
+  h2 { font-size: clamp(22px, 3.5vw, 30px); font-weight: 600; margin: 0 0 8px; }
+  h3 { font-size: 18px; font-weight: 600; margin: 0; }
+  p { margin: 0; line-height: 1.5; color: var(--ink-soft); }
+  a { color: var(--primary); }
+
+  /* layout */
+  #app { max-width: 720px; margin: 0 auto; padding: 24px 20px 120px; }
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 24px;
+  }
+  .brand {
+    display: flex; align-items: center; gap: 10px;
+    font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 22px;
+    color: var(--ink);
+    cursor: pointer; user-select: none;
+  }
+  .brand-mark {
+    width: 36px; height: 36px; border-radius: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--accent-2));
+    display: grid; place-items: center; color: white; font-size: 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .topbar-actions { display: flex; gap: 8px; }
+
+  /* page transitions */
+  .page { animation: fadeUp 0.32s cubic-bezier(.2,.7,.2,1); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: none;} }
+
+  /* buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px 22px; border: none; border-radius: var(--radius);
+    font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 16px;
+    cursor: pointer; transition: transform .12s ease, box-shadow .15s ease, background .15s ease;
+    text-decoration: none; color: var(--ink);
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--accent-2));
+    color: white; box-shadow: 0 8px 22px rgba(124,58,237,0.35);
+  }
+  .btn-primary:hover { box-shadow: 0 10px 28px rgba(124,58,237,0.45); }
+  .btn-ghost { background: transparent; color: var(--primary); }
+  .btn-ghost:hover { background: rgba(124,58,237,0.08); }
+  .btn-soft { background: white; color: var(--ink); box-shadow: var(--shadow-sm); }
+  .btn-soft:hover { box-shadow: var(--shadow-md); }
+  .btn-icon { padding: 10px; border-radius: 12px; }
+  .btn-block { display: flex; width: 100%; }
+  .btn-lg { padding: 18px 26px; font-size: 18px; border-radius: var(--radius-lg); }
+
+  /* hero CTA */
+  .hero-cta {
+    background: linear-gradient(135deg, var(--primary), var(--accent-2));
+    color: white; border-radius: var(--radius-xl);
+    padding: 28px 26px; box-shadow: var(--shadow-lg);
+    position: relative; overflow: hidden;
+    display: grid; grid-template-columns: 1fr auto; gap: 20px; align-items: center;
+    cursor: pointer; transition: transform .15s ease, box-shadow .2s ease;
+  }
+  .hero-cta:hover { transform: translateY(-2px); box-shadow: 0 24px 60px rgba(40, 20, 80, 0.22); }
+  .hero-cta h1 { color: white; margin-bottom: 6px; }
+  .hero-cta p { color: rgba(255,255,255,0.92); }
+  .hero-cta-mark {
+    width: 80px; height: 80px; border-radius: 24px;
+    background: rgba(255,255,255,0.18); display: grid; place-items: center;
+    font-size: 44px; backdrop-filter: blur(8px);
+  }
+  .hero-cta::before, .hero-cta::after {
+    content: ''; position: absolute; border-radius: 50%;
+    background: rgba(255,255,255,0.08); pointer-events: none;
+  }
+  .hero-cta::before { width: 200px; height: 200px; right: -60px; bottom: -100px; }
+  .hero-cta::after { width: 120px; height: 120px; left: -40px; top: -60px; }
+
+  /* section */
+  .section { margin-top: 36px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+  .section-head h2 { margin: 0; }
+  .section-head .pill { font-size: 12px; font-weight: 600; color: var(--muted); }
+
+  /* cards */
+  .card {
+    background: var(--card); border-radius: var(--radius-lg);
+    padding: 18px; box-shadow: var(--shadow-sm);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .card-row { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+  .card-emoji { width: 56px; height: 56px; border-radius: 18px; display: grid; place-items: center; font-size: 30px; flex: none; }
+  .card-body { flex: 1; min-width: 0; }
+  .card-body .meta { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .chev { color: var(--muted); font-size: 22px; }
+
+  /* grid */
+  .grid {
+    display: grid; gap: 14px;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+  .grid-templates { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+  .tile {
+    cursor: pointer; border-radius: var(--radius-lg); padding: 18px 14px;
+    color: white; min-height: 130px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    box-shadow: var(--shadow-sm); transition: transform .15s ease, box-shadow .2s ease;
+    position: relative; overflow: hidden;
+  }
+  .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+  .tile.selected { outline: 3px solid var(--ink); outline-offset: 3px; }
+  .tile .tile-emoji { font-size: 36px; }
+  .tile h3 { color: white; font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 16px; }
+  .tile .tile-sub { color: rgba(255,255,255,0.85); font-size: 12px; }
+
+  /* steps indicator */
+  .stepper {
+    display: flex; gap: 6px; margin-bottom: 20px;
+  }
+  .stepper .dot {
+    flex: 1; height: 6px; border-radius: 3px; background: var(--line);
+  }
+  .stepper .dot.done { background: var(--primary); }
+  .stepper .dot.active { background: linear-gradient(90deg, var(--primary), var(--accent-2)); }
+
+  /* count chips */
+  .count-grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); }
+  .count-chip {
+    cursor: pointer; background: white; border-radius: var(--radius-lg);
+    padding: 22px 16px; text-align: center; box-shadow: var(--shadow-sm);
+    transition: transform .12s ease, box-shadow .15s ease;
+    border: 3px solid transparent;
+  }
+  .count-chip:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .count-chip.selected { border-color: var(--primary); }
+  .count-chip .num { font-family: 'Fredoka', sans-serif; font-size: 38px; color: var(--ink); }
+  .count-chip .lbl { color: var(--muted); font-size: 13px; }
+
+  /* form */
+  .form-group { margin-bottom: 18px; }
+  .label { display: block; font-weight: 600; margin-bottom: 8px; color: var(--ink); }
+  .help { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .input, .select {
+    width: 100%; padding: 14px 16px; border-radius: var(--radius);
+    border: 2px solid var(--line); background: white; font-size: 16px;
+    font-family: inherit; color: var(--ink); transition: border-color .15s ease;
+  }
+  .input:focus, .select:focus { outline: none; border-color: var(--primary); }
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 16px; background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+  .toggle {
+    width: 48px; height: 28px; background: var(--line); border-radius: 14px;
+    position: relative; cursor: pointer; transition: background .15s ease;
+  }
+  .toggle::after {
+    content: ''; position: absolute; left: 3px; top: 3px;
+    width: 22px; height: 22px; border-radius: 50%; background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: left .15s ease;
+  }
+  .toggle.on { background: var(--primary); }
+  .toggle.on::after { left: 23px; }
+
+  .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+  .pill-toggle {
+    padding: 10px 16px; border-radius: 100px; background: white;
+    font-weight: 600; cursor: pointer; box-shadow: var(--shadow-sm);
+    border: 2px solid transparent; transition: all .15s ease;
+  }
+  .pill-toggle.selected { border-color: var(--primary); color: var(--primary); }
+
+  /* footer nav */
+  .footer-nav {
+    position: sticky; bottom: 12px;
+    display: flex; gap: 10px; margin-top: 28px;
+    background: rgba(255,250,240,0.85); backdrop-filter: blur(10px);
+    padding: 12px; border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+  }
+  .footer-nav .btn { flex: 1; }
+
+  /* share screen */
+  .share-card {
+    border-radius: var(--radius-xl); overflow: hidden;
+    color: white; padding: 28px; box-shadow: var(--shadow-lg);
+  }
+  .share-card .qr-wrap {
+    background: white; border-radius: var(--radius-lg);
+    padding: 14px; display: inline-block; margin-top: 16px;
+  }
+  .share-card .qr-wrap img, .share-card .qr-wrap canvas {
+    display: block; width: 180px; height: 180px;
+  }
+  .share-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 10px; margin-top: 16px; }
+  .share-tile {
+    background: white; border-radius: var(--radius); padding: 14px 10px;
+    text-align: center; cursor: pointer; box-shadow: var(--shadow-sm);
+    transition: transform .15s ease, box-shadow .15s ease;
+  }
+  .share-tile:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); }
+  .share-tile .e { font-size: 26px; }
+  .share-tile .n { font-size: 13px; font-weight: 600; margin-top: 6px; color: var(--ink); }
+
+  .link-row {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.18); padding: 8px 8px 8px 14px;
+    border-radius: 14px; margin-top: 14px; font-family: monospace; font-size: 13px;
+  }
+  .link-row .url { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: white; }
+  .link-row .btn { padding: 8px 14px; font-size: 14px; }
+
+  /* play screen */
+  .play-shell {
+    position: fixed; inset: 0; background: #000; z-index: 100;
+    display: grid; grid-template-rows: auto 1fr auto; color: white;
+  }
+  .play-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 18px; background: linear-gradient(180deg, rgba(0,0,0,0.6), transparent);
+    z-index: 2;
+  }
+  .play-header .title { font-family: 'Fredoka', sans-serif; font-weight: 600; font-size: 18px; }
+  .play-header .timer {
+    background: rgba(255,255,255,0.15); padding: 6px 14px; border-radius: 100px;
+    font-variant-numeric: tabular-nums; font-weight: 600;
+    transition: background .25s ease;
+  }
+  .play-header .timer.pulse { animation: timerTick 0.45s ease; }
+  .play-header .timer.warn { background: rgba(239,68,68,0.45); }
+  @keyframes timerTick {
+    0%   { transform: scale(1);    background: rgba(255,255,255,0.15); }
+    25%  { transform: scale(1.07); background: rgba(245,158,11,0.45); }
+    100% { transform: scale(1);    background: rgba(255,255,255,0.15); }
+  }
+  .play-stage {
+    position: relative; overflow: hidden;
+  }
+  #playVideo {
+    width: 100%; height: 100%; object-fit: cover; display: block;
+    background: #111;
+  }
+  .play-fallback {
+    position: absolute; inset: 0; display: grid; place-items: center;
+    text-align: center; padding: 30px;
+    background: radial-gradient(ellipse at center, rgba(124,58,237,0.5), #050014);
+  }
+  .ar-item {
+    position: absolute; font-size: 50px;
+    animation: floaty 2.6s ease-in-out infinite;
+    cursor: pointer;
+    filter: drop-shadow(0 6px 16px rgba(0,0,0,0.5));
+    user-select: none;
+    transition: transform .25s ease, opacity .25s ease;
+  }
+  .ar-item.found { transform: scale(1.6); opacity: 0; pointer-events: none; }
+  .ar-item .glow {
+    position: absolute; inset: -22px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,255,255,0.4), transparent 65%);
+    z-index: -1;
+  }
+  @keyframes floaty {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .play-footer {
+    background: linear-gradient(0deg, rgba(0,0,0,0.85), transparent);
+    padding: 16px 18px 24px; z-index: 2;
+  }
+  .progress-bar {
+    height: 8px; background: rgba(255,255,255,0.18); border-radius: 4px; overflow: hidden;
+  }
+  .progress-bar .fill {
+    height: 100%; background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    width: 0%; transition: width .3s ease;
+  }
+  .checklist {
+    display: flex; gap: 10px; overflow-x: auto; margin-top: 12px;
+    padding-bottom: 4px;
+  }
+  .checklist::-webkit-scrollbar { display: none; }
+  .check {
+    flex: none; width: 56px; height: 56px; border-radius: 16px;
+    background: rgba(255,255,255,0.08); display: grid; place-items: center;
+    font-size: 26px; position: relative;
+    border: 2px solid rgba(255,255,255,0.15);
+  }
+  .check.found {
+    background: rgba(16,185,129,0.25); border-color: var(--mint);
+  }
+  .check.found::after {
+    content: '✓'; position: absolute; right: -4px; top: -4px;
+    width: 22px; height: 22px; border-radius: 50%; background: var(--mint);
+    display: grid; place-items: center; font-size: 13px; font-weight: 700;
+  }
+  .play-banner {
+    position: absolute; left: 50%; top: 24%; transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.7); padding: 14px 22px; border-radius: 100px;
+    font-family: 'Fredoka', sans-serif; font-weight: 600;
+    animation: bannerPop 1.6s ease forwards;
+    pointer-events: none;
+  }
+  @keyframes bannerPop {
+    0% { opacity: 0; transform: translate(-50%, -30%) scale(0.7); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+    80% { opacity: 1; }
+    100% { opacity: 0; transform: translate(-50%, -60%) scale(0.95); }
+  }
+
+  /* placement reticle */
+  .reticle-wrap { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
+  .reticle {
+    width: 200px; height: 200px; border-radius: 50%;
+    border: 3px dashed rgba(255,255,255,0.7);
+    display: grid; place-items: center;
+    box-shadow: 0 0 0 8px rgba(0,0,0,0.25), inset 0 0 60px rgba(255,255,255,0.08);
+    animation: reticlePulse 2.2s ease-in-out infinite;
+    position: relative;
+  }
+  @keyframes reticlePulse {
+    0%, 100% { transform: scale(1); border-color: rgba(255,255,255,0.55); }
+    50%      { transform: scale(1.06); border-color: rgba(255,255,255,0.95); }
+  }
+  .reticle .ghost {
+    font-size: 84px; opacity: 0.85;
+    filter: drop-shadow(0 6px 16px rgba(0,0,0,0.55));
+    animation: ghostBob 2.4s ease-in-out infinite;
+  }
+  @keyframes ghostBob {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-6px); }
+  }
+  .reticle .crosshair-h, .reticle .crosshair-v {
+    position: absolute; background: white; opacity: .9;
+    box-shadow: 0 0 6px rgba(0,0,0,0.4);
+  }
+  .reticle .crosshair-h { width: 24px; height: 2px; }
+  .reticle .crosshair-v { width: 2px; height: 24px; }
+  .place-counter {
+    position: absolute; top: 80px; left: 50%; transform: translateX(-50%);
+    background: rgba(0,0,0,0.6); padding: 8px 18px; border-radius: 100px;
+    font-size: 13px; color: white; font-weight: 600;
+    backdrop-filter: blur(10px);
+    z-index: 3;
+  }
+  .place-tip {
+    position: absolute; left: 50%; bottom: 150px; transform: translateX(-50%);
+    background: rgba(0,0,0,0.6); padding: 10px 18px; border-radius: 100px;
+    font-size: 13px; color: white; max-width: 88%; text-align: center;
+    backdrop-filter: blur(10px);
+    z-index: 3;
+  }
+  .drop-flash {
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    font-size: 100px;
+    pointer-events: none;
+    animation: dropFlash 0.7s cubic-bezier(.2,1.4,.5,1) forwards;
+    filter: drop-shadow(0 0 30px rgba(255,255,255,0.8));
+  }
+  @keyframes dropFlash {
+    0%   { opacity: 1; transform: translate(-50%,-50%) scale(1); }
+    50%  { opacity: 1; transform: translate(-50%,-50%) scale(1.5); }
+    100% { opacity: 0; transform: translate(-50%,-50%) scale(0.4); }
+  }
+  .skip-link {
+    position: absolute; right: 16px; top: 76px;
+    background: rgba(255,255,255,0.18); color: white; padding: 8px 14px;
+    border-radius: 100px; font-size: 13px; cursor: pointer; backdrop-filter: blur(10px);
+    z-index: 3;
+  }
+
+  /* leaderboard */
+  .leaderboard {
+    position: absolute; right: 14px; top: 70px;
+    background: rgba(0,0,0,0.55); backdrop-filter: blur(10px);
+    padding: 10px 12px; border-radius: 14px;
+    font-size: 13px; min-width: 130px;
+  }
+  .leaderboard .lh { font-weight: 600; opacity: 0.7; font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+  .leaderboard .lr { display: flex; justify-content: space-between; padding: 3px 0; }
+  .leaderboard .lr.you { color: var(--accent); font-weight: 600; }
+
+  /* celebrate */
+  .celebrate {
+    text-align: center; padding: 60px 20px;
+  }
+  .celebrate .big {
+    font-family: 'Fredoka', sans-serif; font-size: clamp(40px, 8vw, 64px); font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--accent), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    margin-bottom: 12px;
+  }
+  .celebrate .trophy { font-size: 80px; margin-bottom: 16px; display: block; }
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; max-width: 480px; margin: 22px auto; }
+  .stat { background: white; padding: 16px; border-radius: var(--radius); box-shadow: var(--shadow-sm); }
+  .stat .n { font-family: 'Fredoka', sans-serif; font-size: 26px; color: var(--primary); }
+  .stat .l { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+  /* utilities */
+  .row { display: flex; gap: 10px; }
+  .row > * { flex: 1; }
+  .empty {
+    background: white; padding: 22px; border-radius: var(--radius-lg);
+    text-align: center; color: var(--muted); border: 2px dashed var(--line);
+  }
+  .toast {
+    position: fixed; left: 50%; bottom: 30px; transform: translateX(-50%);
+    background: var(--ink); color: white; padding: 12px 20px; border-radius: 100px;
+    box-shadow: var(--shadow-lg); z-index: 200;
+    animation: toastIn .3s ease, toastOut .3s ease 1.6s forwards;
+  }
+  @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } to { opacity: 1; transform: translateX(-50%); } }
+  @keyframes toastOut { to { opacity: 0; transform: translate(-50%, 12px); } }
+
+  /* tutorial overlay */
+  .tutorial {
+    position: fixed; inset: 0; background: rgba(20, 8, 50, 0.85);
+    z-index: 300; display: grid; place-items: center; padding: 20px;
+  }
+  .tutorial-card {
+    background: white; border-radius: var(--radius-xl); max-width: 480px;
+    padding: 28px; text-align: center; box-shadow: var(--shadow-lg);
+  }
+  .tutorial-card .e { font-size: 56px; margin-bottom: 8px; }
+  .tutorial-dots { display: flex; justify-content: center; gap: 6px; margin: 18px 0; }
+  .tutorial-dots .d { width: 8px; height: 8px; border-radius: 50%; background: var(--line); }
+  .tutorial-dots .d.on { background: var(--primary); width: 22px; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+<script>
+/* =========================================================================
+ * HuntMaster — Working web prototype (single-file)
+ * Vanilla JS. Hash-based routing. localStorage persistence.
+ * ========================================================================= */
+
+/* ---------- Themes & Templates ---------- */
+const THEMES = [
+  { id:'pirate',     name:'Pirate Treasure',  emoji:'🏴‍☠️', sub:'Yo-ho-ho!',
+    grad:'linear-gradient(135deg,#c2410c,#7c2d12)',
+    items:['💰','⚔️','🗝️','🧭','🦜','💎','🪙','📜','⚓','🏝️','🦴','🍾'] },
+  { id:'superhero',  name:'Superhero',        emoji:'🦸', sub:'Save the day',
+    grad:'linear-gradient(135deg,#2563eb,#dc2626)',
+    items:['🦸','🦹','🛡️','⚡','💥','🌀','🦅','🚁','🦾','🦿','🧤','🌃'] },
+  { id:'space',      name:'Space Explorer',   emoji:'🚀', sub:'To the stars',
+    grad:'linear-gradient(135deg,#1e1b4b,#06b6d4)',
+    items:['🚀','🛸','🌌','🪐','⭐','🌠','👽','🌍','🌑','☄️','🛰️','🌙'] },
+  { id:'detective',  name:'Detective Mystery',emoji:'🔍', sub:'Crack the case',
+    grad:'linear-gradient(135deg,#a16207,#1c1917)',
+    items:['🔍','🕵️','🔦','📜','🗝️','💼','📷','🧪','🔑','📰','☕','🚪'] },
+  { id:'unicorn',    name:'Unicorn Fantasy',  emoji:'🦄', sub:'Magical realm',
+    grad:'linear-gradient(135deg,#ec4899,#a78bfa)',
+    items:['🦄','🌈','✨','⭐','🌸','🍓','🦋','💖','🎀','🌙','🪄','👑'] },
+  { id:'dino',       name:'Dinosaur Adventure',emoji:'🦖', sub:'Prehistoric quest',
+    grad:'linear-gradient(135deg,#16a34a,#ea580c)',
+    items:['🦖','🦕','🥚','🌿','🦴','🌋','🌳','🪨','🐾','🍃','🦎','🐢'] },
+  { id:'candy',      name:'Candy Land',       emoji:'🍭', sub:'Sweetest hunt',
+    grad:'linear-gradient(135deg,#f472b6,#22d3ee)',
+    items:['🍭','🍬','🍫','🧁','🍰','🍩','🍪','🍦','🍯','🍡','🍓','🍒'] },
+  { id:'underwater', name:'Underwater Quest', emoji:'🐠', sub:'Dive deep',
+    grad:'linear-gradient(135deg,#0891b2,#0e7490)',
+    items:['🐠','🐡','🦀','🐚','🐙','🦑','🐬','🦈','🪸','⚓','🧜‍♀️','🐢'] },
+  { id:'noir',       name:'Detective Noir',   emoji:'🕵️', sub:'Shadows & secrets',
+    grad:'linear-gradient(135deg,#334155,#a16207)',
+    items:['🕵️','🎩','💼','🔫','🎷','🌃','📞','🥃','🚬','🗞️','🔑','📔'] },
+  { id:'adventure',  name:'General Adventure',emoji:'🗺️', sub:'Anything goes',
+    grad:'linear-gradient(135deg,#a16207,#65a30d)',
+    items:['🗺️','🧭','🎒','⛺','🔥','🏔️','🦌','🌲','🌄','🪵','🎯','🏆'] },
+];
+
+const TEMPLATES = [
+  { id:'birthday',  name:'Birthday Party',     emoji:'🎂', themeId:'unicorn',   itemCount:8,  timeLimit:30 },
+  { id:'airbnb',    name:'Airbnb Welcome',     emoji:'🏡', themeId:'adventure', itemCount:6,  timeLimit:45 },
+  { id:'classroom', name:'Classroom Adventure',emoji:'📚', themeId:'space',     itemCount:10, timeLimit:30 },
+  { id:'family',    name:'Family Game Night',  emoji:'🎲', themeId:'candy',     itemCount:8,  timeLimit:30 },
+  { id:'team',      name:'Team Building',      emoji:'🤝', themeId:'detective', itemCount:10, timeLimit:45 },
+  { id:'date',      name:'Date Night',         emoji:'💕', themeId:'noir',      itemCount:6,  timeLimit:60 },
+  { id:'custom',    name:'Custom',             emoji:'✨', themeId:null,        itemCount:8,  timeLimit:30 },
+];
+
+const ITEM_COUNTS = [6, 8, 10, 12];
+const TIME_LIMITS = [20, 30, 45, 60];
+
+const STORAGE_KEY = 'huntmaster.hunts.v1';
+const ONBOARDED_KEY = 'huntmaster.onboarded.v1';
+const PLACE_TUTORIAL_KEY = 'huntmaster.placetutorial.v1';
+
+const PLACEMENT_STEPS = [
+  { e:'📱', t:'Hold like a wand',     d:"Hold your phone in front of you like you're aiming a magic wand at the spot you want to hide an item." },
+  { e:'🔄', t:'Pan slowly',           d:'Slowly turn around the room. Smooth, steady moves help the app map your space accurately.' },
+  { e:'🎯', t:'Aim the crosshair',    d:'When you find a perfect hiding spot, line the center crosshair right on it.' },
+  { e:'✨', t:'Drop it!',              d:'Tap the big "Drop Here" button to place the item. Repeat for each one — it only takes seconds.' },
+];
+
+/* ---------- State helpers ---------- */
+function loadHunts() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; }
+  catch { return []; }
+}
+function saveHunts(hunts) { localStorage.setItem(STORAGE_KEY, JSON.stringify(hunts)); }
+function getHunt(id) { return loadHunts().find(h => h.id === id); }
+function upsertHunt(hunt) {
+  const all = loadHunts();
+  const i = all.findIndex(h => h.id === hunt.id);
+  if (i >= 0) all[i] = hunt; else all.unshift(hunt);
+  saveHunts(all);
+}
+function deleteHunt(id) {
+  saveHunts(loadHunts().filter(h => h.id !== id));
+}
+function getTheme(id) { return THEMES.find(t => t.id === id) || THEMES[0]; }
+
+function uid() { return Math.random().toString(36).slice(2, 9); }
+
+/* URL-safe base64 (no +, /, or = padding) so the hunt fits cleanly in the URL */
+function b64UrlEncode(str) {
+  return btoa(unescape(encodeURIComponent(str)))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64UrlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  try { return decodeURIComponent(escape(atob(str))); } catch { return null; }
+}
+function encodeHuntForUrl(hunt) {
+  // Compact shape — drop play history etc., just what's needed to play
+  const slim = {
+    id: hunt.id,
+    title: hunt.title,
+    themeId: hunt.themeId,
+    itemCount: hunt.itemCount,
+    timeLimit: hunt.timeLimit,
+    location: hunt.location,
+    items: (hunt.items || []).map(it => ({ emoji: it.emoji, clue: it.clue, position: it.position })),
+  };
+  return 'h_' + b64UrlEncode(JSON.stringify(slim));
+}
+function decodeHuntFromUrl(idOrEncoded) {
+  if (!idOrEncoded || !idOrEncoded.startsWith('h_')) return null;
+  const json = b64UrlDecode(idOrEncoded.slice(2));
+  if (!json) return null;
+  try {
+    const h = JSON.parse(json);
+    if (!h.id || !h.themeId) return null;
+    h.plays = h.plays || [];
+    return h;
+  } catch { return null; }
+}
+
+/* In-memory draft state for the create flow */
+let draft = null;
+function newDraft(seed = {}) {
+  draft = Object.assign({
+    id: uid(),
+    title: '',
+    themeId: null,
+    itemCount: 8,
+    location: '',
+    timeLimit: 30,
+    useLidar: false,
+    createdAt: Date.now(),
+  }, seed);
+}
+
+/* ---------- Router ---------- */
+const routes = [
+  { match: /^#?\/?$/,                    render: renderHome },
+  { match: /^#\/home$/,                  render: renderHome },
+  { match: /^#\/create\/theme$/,         render: renderCreateTheme },
+  { match: /^#\/create\/items$/,         render: renderCreateItems },
+  { match: /^#\/create\/settings$/,      render: renderCreateSettings },
+  { match: /^#\/create\/place\/(.+)$/,   render: (m) => renderCreatePlace(m[1]) },
+  { match: /^#\/share\/(.+)$/,           render: (m) => renderShare(m[1]) },
+  { match: /^#\/play\/(.+)$/,            render: (m) => renderPlay(m[1]) },
+  { match: /^#\/celebrate\/(.+)$/,       render: (m) => renderCelebrate(m[1]) },
+  { match: /^#\/hunt\/(.+)$/,            render: (m) => renderHuntDetail(m[1]) },
+];
+function navigate(hash) {
+  if (location.hash !== hash) location.hash = hash; else routeNow();
+}
+function routeNow() {
+  const h = location.hash || '#/home';
+  for (const r of routes) {
+    const m = h.match(r.match);
+    if (m) { stopPlay(); if (typeof stopPlace === 'function') stopPlace(); r.render(m); window.scrollTo(0, 0); return; }
+  }
+  renderHome();
+}
+window.addEventListener('hashchange', routeNow);
+
+/* ---------- Common UI bits ---------- */
+function topbar(showBack=false) {
+  return `
+    <div class="topbar">
+      <div class="brand" onclick="navigate('#/home')">
+        <span class="brand-mark">🏴‍☠️</span>
+        <span>HuntMaster</span>
+      </div>
+      <div class="topbar-actions">
+        ${showBack ? `<button class="btn btn-soft" onclick="history.back()">← Back</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+function toast(msg) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+
+/* ---------- Pages ---------- */
+function renderHome() {
+  const hunts = loadHunts();
+  const myHuntsHTML = hunts.length === 0
+    ? `<div class="empty">No hunts yet — tap “Create New Hunt” to get started in under 2 minutes.</div>`
+    : hunts.map(h => {
+        const theme = getTheme(h.themeId);
+        const playCount = (h.plays || []).length;
+        return `
+        <div class="card" style="margin-bottom:10px">
+          <div class="card-row" onclick="navigate('#/hunt/${h.id}')">
+            <div class="card-emoji" style="background:${theme.grad}; color:white">${theme.emoji}</div>
+            <div class="card-body">
+              <h3>${escapeHTML(h.title || 'Untitled hunt')}</h3>
+              <div class="meta">${theme.name} • ${h.itemCount} items • ${h.timeLimit} min ${playCount ? `• ${playCount} play${playCount>1?'s':''}` : ''}</div>
+            </div>
+            <div class="chev">›</div>
+          </div>
+        </div>`;
+      }).join('');
+
+  const tpl = TEMPLATES.map(t => {
+    const theme = t.themeId ? getTheme(t.themeId) : { grad:'linear-gradient(135deg,#94a3b8,#475569)' };
+    return `
+      <div class="tile" style="background:${theme.grad}" onclick="startFromTemplate('${t.id}')">
+        <div class="tile-emoji">${t.emoji}</div>
+        <div>
+          <h3>${t.name}</h3>
+          <div class="tile-sub">${t.itemCount} items • ${t.timeLimit} min</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  app.innerHTML = `
+    <div class="page">
+      ${topbar(false)}
+      <div class="hero-cta" onclick="startBlank()">
+        <div>
+          <h1>Create New Hunt</h1>
+          <p>Magical AR scavenger hunt in under 2 minutes</p>
+        </div>
+        <div class="hero-cta-mark">✨</div>
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2>My Hunts</h2>
+          <span class="pill">${hunts.length} saved</span>
+        </div>
+        ${myHuntsHTML}
+      </div>
+
+      <div class="section">
+        <div class="section-head">
+          <h2>Ready-to-Use Templates</h2>
+          <span class="pill">tap to start</span>
+        </div>
+        <div class="grid grid-templates">${tpl}</div>
+      </div>
+    </div>
+  `;
+  maybeShowOnboarding();
+}
+
+function startBlank() {
+  newDraft();
+  navigate('#/create/theme');
+}
+function startFromTemplate(tplId) {
+  const t = TEMPLATES.find(x => x.id === tplId);
+  newDraft({
+    themeId: t.themeId,
+    itemCount: t.itemCount,
+    timeLimit: t.timeLimit,
+    title: t.name,
+  });
+  navigate(t.themeId ? '#/create/items' : '#/create/theme');
+}
+
+function stepper(activeIdx) {
+  const states = [0,1,2].map(i => i < activeIdx ? 'done' : (i === activeIdx ? 'active' : ''));
+  return `<div class="stepper">${states.map(s => `<div class="dot ${s}"></div>`).join('')}</div>`;
+}
+
+function renderCreateTheme() {
+  if (!draft) newDraft();
+  const tiles = THEMES.map(t => `
+    <div class="tile ${draft.themeId===t.id ? 'selected' : ''}" style="background:${t.grad}"
+         onclick="pickTheme('${t.id}')">
+      <div class="tile-emoji">${t.emoji}</div>
+      <div>
+        <h3>${t.name}</h3>
+        <div class="tile-sub">${t.sub}</div>
+      </div>
+    </div>
+  `).join('');
+  app.innerHTML = `
+    <div class="page">
+      ${topbar(true)}
+      ${stepper(0)}
+      <h1>Pick a theme</h1>
+      <p style="margin-bottom:18px">Each theme comes with its own items, sounds, and clues.</p>
+      <div class="grid">${tiles}</div>
+      <div class="footer-nav">
+        <button class="btn btn-ghost" onclick="navigate('#/home')">Cancel</button>
+        <button class="btn btn-primary btn-lg" ${draft.themeId ? '' : 'disabled style="opacity:.5"'}
+                onclick="navigate('#/create/items')">Next →</button>
+      </div>
+    </div>
+  `;
+}
+function pickTheme(id) {
+  draft.themeId = id;
+  renderCreateTheme();
+}
+
+function renderCreateItems() {
+  if (!draft || !draft.themeId) { navigate('#/create/theme'); return; }
+  const theme = getTheme(draft.themeId);
+  const chips = ITEM_COUNTS.map(n => `
+    <div class="count-chip ${draft.itemCount===n ? 'selected' : ''}" onclick="pickCount(${n})">
+      <div class="num">${n}</div>
+      <div class="lbl">items</div>
+    </div>
+  `).join('');
+  app.innerHTML = `
+    <div class="page">
+      ${topbar(true)}
+      ${stepper(1)}
+      <h1>How many items?</h1>
+      <p style="margin-bottom:18px">${theme.emoji} ${theme.name} hunt — pick a number that fits your space and time.</p>
+      <div class="count-grid">${chips}</div>
+      <div class="footer-nav">
+        <button class="btn btn-ghost" onclick="navigate('#/create/theme')">← Back</button>
+        <button class="btn btn-primary btn-lg" onclick="navigate('#/create/settings')">Next →</button>
+      </div>
+    </div>
+  `;
+}
+function pickCount(n) { draft.itemCount = n; renderCreateItems(); }
+
+function renderCreateSettings() {
+  if (!draft || !draft.themeId) { navigate('#/create/theme'); return; }
+  const theme = getTheme(draft.themeId);
+  const supportsLidar = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  app.innerHTML = `
+    <div class="page">
+      ${topbar(true)}
+      ${stepper(2)}
+      <h1>Last details</h1>
+      <p style="margin-bottom:18px">${theme.emoji} ${theme.name} • ${draft.itemCount} items</p>
+
+      <div class="form-group">
+        <label class="label">Hunt name</label>
+        <input class="input" id="title" placeholder="My Backyard Adventure" value="${escapeHTML(draft.title || '')}" />
+      </div>
+
+      <div class="form-group">
+        <label class="label">Location</label>
+        <div class="row">
+          <input class="input" id="location" placeholder="Living Room, Backyard, Park…" value="${escapeHTML(draft.location || '')}" />
+          <button class="btn btn-soft" onclick="autoLocate()" title="Use my location">📍</button>
+        </div>
+        <div class="help">Auto-detects via GPS, or name it whatever you like.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="label">Time limit</label>
+        <div class="pills">
+          ${TIME_LIMITS.map(t => `<div class="pill-toggle ${draft.timeLimit===t?'selected':''}" onclick="pickTime(${t})">${t} min</div>`).join('')}
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="toggle-row">
+          <div>
+            <div style="font-weight:600">Use LiDAR</div>
+            <div class="help">Better accuracy on iPhone 12 Pro and newer ${supportsLidar ? '' : '(iOS only)'}</div>
+          </div>
+          <div class="toggle ${draft.useLidar?'on':''}" onclick="toggleLidar()"></div>
+        </div>
+      </div>
+
+      <div class="footer-nav">
+        <button class="btn btn-ghost" onclick="navigate('#/create/items')">← Back</button>
+        <button class="btn btn-primary btn-lg" onclick="finishCreate()">Create Hunt 🎉</button>
+      </div>
+    </div>
+  `;
+}
+function pickTime(t) { draft.timeLimit = t; renderCreateSettings(); }
+function toggleLidar() { draft.useLidar = !draft.useLidar; renderCreateSettings(); }
+function autoLocate() {
+  if (!navigator.geolocation) { toast('Geolocation not available'); return; }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const { latitude, longitude } = pos.coords;
+      const el = document.getElementById('location');
+      if (el) el.value = `Here (${latitude.toFixed(3)}, ${longitude.toFixed(3)})`;
+      toast('Location captured');
+    },
+    () => toast('Could not get location')
+  );
+}
+function finishCreate() {
+  draft.title = (document.getElementById('title')?.value || '').trim() || 'My Hunt';
+  draft.location = (document.getElementById('location')?.value || '').trim();
+  const theme = getTheme(draft.themeId);
+  // Pre-bake item slots from the theme (no positions yet — set during placement)
+  draft.items = Array.from({ length: draft.itemCount }, (_, i) => ({
+    emoji: theme.items[i % theme.items.length],
+    clue: autoClue(theme, i),
+    position: null,
+  }));
+  upsertHunt(draft);
+  const id = draft.id;
+  draft = null;
+  navigate('#/create/place/' + id);
+}
+function autoClue(theme, i) {
+  const templates = [
+    `Look ${['high','low','behind','under','near','beside'][i%6]} something ${['shiny','soft','wooden','colorful','round','quiet'][i%6]}.`,
+    `Where ${['light','warmth','laughter','silence','secrets','snacks'][i%6]} hides, you'll find me.`,
+    `I rest where ${['feet pause','hands rest','stories begin','dreams take off','time slows','memories live'][i%6]}.`,
+  ];
+  return templates[i % templates.length];
+}
+
+/* ---------- Create: Place items (camera + reticle) ---------- */
+let placeState = null;
+function stopPlace() {
+  if (placeState && placeState.stream) {
+    placeState.stream.getTracks().forEach(t => t.stop());
+  }
+  placeState = null;
+}
+
+function renderCreatePlace(id) {
+  const hunt = getHunt(id);
+  if (!hunt) { navigate('#/home'); return; }
+  const theme = getTheme(hunt.themeId);
+  placeState = { huntId: id, idx: 0, stream: null };
+
+  document.body.innerHTML = `
+    <div class="play-shell">
+      <div class="play-header">
+        <button class="btn btn-icon" onclick="cancelPlace()" style="background:rgba(255,255,255,0.18); color:white">✕</button>
+        <div class="title">${theme.emoji} Place items</div>
+        <div style="width:40px"></div>
+      </div>
+      <div class="play-stage" id="placeStage">
+        <video id="placeVideo" autoplay playsinline muted></video>
+        <div class="play-fallback" id="placeFallback" style="display:none">
+          <div>
+            <div style="font-size:64px">${theme.emoji}</div>
+            <h2 style="color:white">Camera off</h2>
+            <p style="color:rgba(255,255,255,0.85); max-width:340px">No worries — you can still place items. Tap "Drop Here" to set each one.</p>
+          </div>
+        </div>
+        <div class="place-counter" id="placeCounter">Item 1 of ${hunt.itemCount}</div>
+        <div class="skip-link" onclick="autoPlaceRest()">⚡ Auto-place rest</div>
+        <div class="reticle-wrap">
+          <div class="reticle">
+            <div class="ghost" id="placeGhost">${hunt.items[0].emoji}</div>
+            <div class="crosshair-h"></div>
+            <div class="crosshair-v"></div>
+          </div>
+        </div>
+        <div class="place-tip" id="placeTip">Aim the crosshair where you want to hide this item</div>
+      </div>
+      <div class="play-footer">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px">
+          <div style="font-weight:600">Placed</div>
+          <div id="placeCount">0 / ${hunt.itemCount}</div>
+        </div>
+        <div class="progress-bar"><div class="fill" id="placeFill"></div></div>
+        <button class="btn btn-primary btn-lg btn-block" style="margin-top:14px" onclick="dropHere()">📍 Drop Here</button>
+      </div>
+    </div>
+  `;
+  startPlaceCamera();
+  if (!localStorage.getItem(PLACE_TUTORIAL_KEY)) showPlacementTutorial();
+}
+
+function startPlaceCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) {
+    document.getElementById('placeFallback').style.display = 'grid';
+    return;
+  }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+    .then(stream => {
+      placeState.stream = stream;
+      const v = document.getElementById('placeVideo');
+      if (v) v.srcObject = stream;
+    })
+    .catch(() => {
+      document.getElementById('placeFallback').style.display = 'grid';
+    });
+}
+
+function dropHere() {
+  if (!placeState) return;
+  const hunt = getHunt(placeState.huntId);
+  if (!hunt) return;
+  const i = placeState.idx;
+  if (i >= hunt.itemCount) return;
+  // Record position — center crosshair plus a small jitter so items don't all overlap during play
+  const jx = (Math.random() - 0.5) * 30;
+  const jy = (Math.random() - 0.5) * 30;
+  hunt.items[i].position = { x: 50 + jx, y: 50 + jy };
+  upsertHunt(hunt);
+  // visual flash
+  const stage = document.getElementById('placeStage');
+  if (stage) {
+    const flash = document.createElement('div');
+    flash.className = 'drop-flash';
+    flash.textContent = hunt.items[i].emoji;
+    stage.appendChild(flash);
+    setTimeout(() => flash.remove(), 700);
+  }
+  if (window.confetti) confetti({ particleCount: 25, spread: 50, origin: { y: 0.5 }, scalar: 0.7 });
+  placeState.idx++;
+  if (placeState.idx >= hunt.itemCount) {
+    // done!
+    setTimeout(() => finishPlacement(), 600);
+    return;
+  }
+  // show next item
+  const next = hunt.items[placeState.idx];
+  document.getElementById('placeGhost').textContent = next.emoji;
+  document.getElementById('placeCounter').textContent = `Item ${placeState.idx + 1} of ${hunt.itemCount}`;
+  document.getElementById('placeCount').textContent = `${placeState.idx} / ${hunt.itemCount}`;
+  document.getElementById('placeFill').style.width = (placeState.idx / hunt.itemCount * 100) + '%';
+  // rotate tips for variety
+  const tips = [
+    'Move to a new spot, then aim and drop',
+    'Try a tricky hiding place — under a couch, behind a plant',
+    'Higher and lower spots make the hunt more fun',
+    'Spread items around to keep players moving',
+  ];
+  document.getElementById('placeTip').textContent = tips[placeState.idx % tips.length];
+}
+
+function autoPlaceRest() {
+  if (!placeState) return;
+  if (!confirm('Auto-place all remaining items?')) return;
+  const hunt = getHunt(placeState.huntId);
+  if (!hunt) return;
+  for (let i = placeState.idx; i < hunt.itemCount; i++) {
+    hunt.items[i].position = { x: 15 + Math.random()*70, y: 25 + Math.random()*55 };
+  }
+  upsertHunt(hunt);
+  finishPlacement();
+}
+
+function finishPlacement() {
+  const id = placeState ? placeState.huntId : null;
+  stopPlace();
+  document.body.innerHTML = '<div id="app"></div>';
+  app = document.getElementById('app');
+  if (id) navigate('#/share/' + id);
+  else navigate('#/home');
+}
+
+function cancelPlace() {
+  if (!confirm('Cancel placement? You can come back anytime — items will be auto-placed if you skip.')) return;
+  // auto-place anything remaining so the hunt is still playable
+  if (placeState) {
+    const hunt = getHunt(placeState.huntId);
+    if (hunt) {
+      for (let i = 0; i < hunt.itemCount; i++) {
+        if (!hunt.items[i].position) {
+          hunt.items[i].position = { x: 15 + Math.random()*70, y: 25 + Math.random()*55 };
+        }
+      }
+      upsertHunt(hunt);
+    }
+  }
+  finishPlacement();
+}
+
+/* placement tutorial — 4-step coachmark */
+let placeTutorialIdx = 0;
+function showPlacementTutorial() {
+  placeTutorialIdx = 0;
+  showPlaceTutorialStep();
+}
+function showPlaceTutorialStep() {
+  const step = PLACEMENT_STEPS[placeTutorialIdx];
+  let el = document.getElementById('place-tutorial');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'place-tutorial';
+    el.className = 'tutorial';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <div class="tutorial-card">
+      <div class="e">${step.e}</div>
+      <h2>${step.t}</h2>
+      <p>${step.d}</p>
+      <div class="tutorial-dots">
+        ${PLACEMENT_STEPS.map((_,i) => `<div class="d ${i===placeTutorialIdx?'on':''}"></div>`).join('')}
+      </div>
+      <div style="display:flex; gap:8px; justify-content:center;">
+        <button class="btn btn-ghost" onclick="skipPlaceTutorial()">Skip</button>
+        <button class="btn btn-primary" onclick="advancePlaceTutorial()">${placeTutorialIdx===PLACEMENT_STEPS.length-1?"Let's place!":'Next →'}</button>
+      </div>
+    </div>
+  `;
+}
+function advancePlaceTutorial() {
+  placeTutorialIdx++;
+  if (placeTutorialIdx >= PLACEMENT_STEPS.length) skipPlaceTutorial();
+  else showPlaceTutorialStep();
+}
+function skipPlaceTutorial() {
+  localStorage.setItem(PLACE_TUTORIAL_KEY, '1');
+  const el = document.getElementById('place-tutorial');
+  if (el) el.remove();
+}
+
+function renderHuntDetail(id) {
+  const hunt = getHunt(id);
+  if (!hunt) { navigate('#/home'); return; }
+  const theme = getTheme(hunt.themeId);
+  app.innerHTML = `
+    <div class="page">
+      ${topbar(true)}
+      <div class="share-card" style="background:${theme.grad}">
+        <div style="display:flex; align-items:center; gap:14px">
+          <div style="font-size:46px">${theme.emoji}</div>
+          <div>
+            <h1 style="color:white; margin:0">${escapeHTML(hunt.title)}</h1>
+            <div style="opacity:.9">${theme.name} • ${hunt.itemCount} items • ${hunt.timeLimit} min</div>
+          </div>
+        </div>
+        ${hunt.location ? `<p style="color:rgba(255,255,255,0.9); margin-top:14px">📍 ${escapeHTML(hunt.location)}</p>` : ''}
+      </div>
+
+      <div class="section">
+        <div class="row" style="margin-top:14px">
+          <button class="btn btn-primary btn-lg" onclick="navigate('#/play/${hunt.id}')">▶ Play Now</button>
+          <button class="btn btn-soft btn-lg" onclick="navigate('#/share/${hunt.id}')">🔗 Share</button>
+        </div>
+        <button class="btn btn-ghost btn-block" style="margin-top:12px" onclick="confirmDelete('${hunt.id}')">Delete hunt</button>
+      </div>
+
+      <div class="section">
+        <h2>Items</h2>
+        <div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))">
+          ${hunt.items.map((it, i) => `
+            <div class="card" style="text-align:center; padding:14px">
+              <div style="font-size:32px">${it.emoji}</div>
+              <div class="meta" style="font-size:12px; color:var(--muted); margin-top:6px">#${i+1}</div>
+              <div style="font-size:13px; color:var(--ink-soft); margin-top:4px">${escapeHTML(it.clue)}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      ${(hunt.plays && hunt.plays.length) ? `
+        <div class="section">
+          <h2>Recent plays</h2>
+          ${hunt.plays.slice(-5).reverse().map(p => `
+            <div class="card" style="margin-bottom:8px">
+              <div class="card-row">
+                <div class="card-emoji" style="background:linear-gradient(135deg,#10b981,#0ea5e9); color:white">🏆</div>
+                <div class="card-body">
+                  <h3>Found ${p.foundCount}/${hunt.itemCount}</h3>
+                  <div class="meta">${new Date(p.startedAt).toLocaleString()} • ${formatDur((p.finishedAt||Date.now()) - p.startedAt)}</div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+    </div>
+  `;
+}
+function confirmDelete(id) {
+  if (confirm('Delete this hunt? This cannot be undone.')) {
+    deleteHunt(id);
+    navigate('#/home');
+  }
+}
+function formatDur(ms) {
+  const s = Math.max(0, Math.floor(ms/1000));
+  const m = Math.floor(s/60); const r = s%60;
+  return `${m}:${String(r).padStart(2,'0')}`;
+}
+
+function renderShare(id) {
+  const hunt = getHunt(id);
+  if (!hunt) { navigate('#/home'); return; }
+  const theme = getTheme(hunt.themeId);
+  // Self-contained URL: pack the whole hunt into the hash so recipients
+  // don't need anything from your localStorage or any backend to play.
+  const url = location.origin + location.pathname + '#/play/' + encodeHuntForUrl(hunt);
+  const isLocalFile = location.protocol === 'file:';
+
+  app.innerHTML = `
+    <div class="page">
+      ${topbar(true)}
+      <div class="share-card" style="background:${theme.grad}">
+        <div style="display:flex; align-items:center; gap:14px">
+          <div style="font-size:48px">${theme.emoji}</div>
+          <div>
+            <h1 style="color:white; margin:0">${escapeHTML(hunt.title)}</h1>
+            <div style="opacity:.9">${theme.name} • ${hunt.itemCount} items</div>
+          </div>
+        </div>
+        <div class="qr-wrap"><canvas id="qrCanvas"></canvas></div>
+        <div class="link-row">
+          <span class="url">${escapeHTML(url)}</span>
+          <button class="btn btn-soft" onclick="copyLink('${url.replace(/'/g, "\\'")}')">Copy</button>
+        </div>
+        ${isLocalFile ? `
+          <div style="margin-top:14px; background:rgba(0,0,0,0.25); border-radius:14px; padding:12px 14px; font-size:13px; color:white">
+            ⚠️ <b>Heads up:</b> this link starts with <code>file:///</code> because the app is open from your computer's hard drive. Recipients can't open <code>file:///</code> links — they only work on YOUR machine.
+            <br><br>To make sharing actually work, host this file on the web (Netlify, Vercel, GitHub Pages — all free). Then share links will be normal <code>https://</code> URLs that work for everyone.
+          </div>
+        ` : ''}
+      </div>
+
+      <div class="section">
+        <h2>Share to…</h2>
+        <div class="share-row">
+          <div class="share-tile" onclick="shareTo('whatsapp','${url.replace(/'/g, "\\'")}','${escapeJS(hunt.title)}')">
+            <div class="e">💬</div><div class="n">WhatsApp</div>
+          </div>
+          <div class="share-tile" onclick="shareTo('sms','${url.replace(/'/g, "\\'")}','${escapeJS(hunt.title)}')">
+            <div class="e">📱</div><div class="n">SMS</div>
+          </div>
+          <div class="share-tile" onclick="shareTo('email','${url.replace(/'/g, "\\'")}','${escapeJS(hunt.title)}')">
+            <div class="e">✉️</div><div class="n">Email</div>
+          </div>
+          <div class="share-tile" onclick="shareTo('native','${url.replace(/'/g, "\\'")}','${escapeJS(hunt.title)}')">
+            <div class="e">📤</div><div class="n">More…</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <button class="btn btn-primary btn-lg btn-block" onclick="navigate('#/play/${hunt.id}')">▶ Play it now</button>
+        <button class="btn btn-ghost btn-block" style="margin-top:8px" onclick="navigate('#/hunt/${hunt.id}')">View details</button>
+      </div>
+    </div>
+  `;
+  // render QR after DOM exists
+  if (window.QRCode) {
+    QRCode.toCanvas(document.getElementById('qrCanvas'), url, { width: 180, margin: 1, color:{ dark: theme.id==='detective' || theme.id==='noir' ? '#1f1147' : '#1f1147', light: '#ffffff' } });
+  }
+}
+function copyLink(url) {
+  navigator.clipboard?.writeText(url).then(() => toast('Link copied!'),
+    () => toast('Copy failed — long-press to copy.'));
+}
+function shareTo(target, url, title) {
+  const text = `Join my hunt "${title}" on HuntMaster! `;
+  if (target === 'native' && navigator.share) {
+    navigator.share({ title, text, url }).catch(()=>{});
+    return;
+  }
+  let href;
+  switch (target) {
+    case 'whatsapp': href = 'https://wa.me/?text=' + encodeURIComponent(text + url); break;
+    case 'sms':      href = 'sms:?&body=' + encodeURIComponent(text + url); break;
+    case 'email':    href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(text + url); break;
+    default:         copyLink(url); return;
+  }
+  window.open(href, '_blank');
+}
+
+/* ---------- Play (simulated AR) ---------- */
+let playState = null;
+function stopPlay() {
+  if (playState && playState.timerId) clearInterval(playState.timerId);
+  if (playState && playState.stream) {
+    playState.stream.getTracks().forEach(t => t.stop());
+  }
+  playState = null;
+}
+
+function renderPlay(idOrEncoded) {
+  // Accept either a local hunt ID or a self-contained encoded hunt
+  let hunt = getHunt(idOrEncoded);
+  if (!hunt) hunt = decodeHuntFromUrl(idOrEncoded);
+  if (!hunt) { navigate('#/home'); return; }
+  const id = hunt.id;
+  const theme = getTheme(hunt.themeId);
+  // initial state
+  playState = {
+    huntId: id,
+    startedAt: Date.now(),
+    deadline: Date.now() + hunt.timeLimit * 60 * 1000,
+    found: new Set(),
+    items: hunt.items.map((it, i) => ({
+      ...it, idx: i,
+      // honor placed positions; otherwise scatter randomly
+      x: it.position?.x ?? (15 + Math.random()*70),
+      y: it.position?.y ?? (25 + Math.random()*55),
+    })),
+    leaderboard: [
+      { name: 'You',   score: 0, isYou: true },
+      { name: 'Sage',   score: Math.floor(Math.random()*hunt.itemCount*0.4) },
+      { name: 'Zoë',    score: Math.floor(Math.random()*hunt.itemCount*0.4) },
+      { name: 'Quessa', score: Math.floor(Math.random()*hunt.itemCount*0.4) },
+    ],
+    timerId: null,
+    stream: null,
+  };
+
+  document.body.innerHTML = `
+    <div class="play-shell">
+      <div class="play-header">
+        <button class="btn btn-icon btn-soft" onclick="exitPlay()" style="background:rgba(255,255,255,0.18); color:white">✕</button>
+        <div class="title">${theme.emoji} ${escapeHTML(hunt.title)}</div>
+        <div class="timer" id="playTimer">${hunt.timeLimit}:00</div>
+      </div>
+      <div class="play-stage" id="playStage">
+        <video id="playVideo" autoplay playsinline muted></video>
+        <div class="play-fallback" id="playFallback" style="display:none">
+          <div>
+            <div style="font-size:64px">${theme.emoji}</div>
+            <h2 style="color:white">Camera off</h2>
+            <p style="color:rgba(255,255,255,0.85); max-width:340px">Items will appear in this play space — tap them to collect.</p>
+          </div>
+        </div>
+        <div class="leaderboard" id="leaderboard"></div>
+        <div id="arItems"></div>
+      </div>
+      <div class="play-footer">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+          <div style="font-weight:600">Items found</div>
+          <div id="playCount">0 / ${hunt.itemCount}</div>
+        </div>
+        <div class="progress-bar"><div class="fill" id="playFill"></div></div>
+        <div class="checklist" id="checklist"></div>
+      </div>
+    </div>
+  `;
+  renderChecklist();
+  renderLeaderboard();
+  placeArItems();
+  startCamera();
+  startTimer();
+  // re-position items if window resizes
+  window.addEventListener('resize', placeArItems);
+}
+
+function renderChecklist() {
+  const cl = document.getElementById('checklist');
+  cl.innerHTML = playState.items.map(it => `
+    <div class="check ${playState.found.has(it.idx) ? 'found' : ''}">${it.emoji}</div>
+  `).join('');
+  document.getElementById('playCount').textContent = `${playState.found.size} / ${playState.items.length}`;
+  document.getElementById('playFill').style.width = (playState.found.size / playState.items.length * 100) + '%';
+}
+
+function renderLeaderboard() {
+  const lb = document.getElementById('leaderboard');
+  if (!lb) return;
+  // bots inch up over time
+  const sorted = [...playState.leaderboard].sort((a,b)=>b.score-a.score);
+  lb.innerHTML = `<div class="lh">Leaderboard</div>` + sorted.map(r => `
+    <div class="lr ${r.isYou?'you':''}"><span>${escapeHTML(r.name)}</span><span>${r.score}</span></div>
+  `).join('');
+}
+
+function placeArItems() {
+  const stage = document.getElementById('arItems');
+  if (!stage || !playState) return;
+  stage.innerHTML = playState.items.map(it => `
+    <div class="ar-item" id="ar-${it.idx}" data-idx="${it.idx}"
+         style="left:${it.x}%; top:${it.y}%;${playState.found.has(it.idx) ? 'display:none' : ''}">
+      ${it.emoji}<span class="glow"></span>
+    </div>
+  `).join('');
+  stage.querySelectorAll('.ar-item').forEach(el => {
+    el.addEventListener('click', () => collectItem(parseInt(el.dataset.idx, 10)));
+  });
+}
+
+function collectItem(idx) {
+  if (!playState || playState.found.has(idx)) return;
+  playState.found.add(idx);
+  const el = document.getElementById('ar-' + idx);
+  if (el) {
+    el.classList.add('found');
+    setTimeout(() => el.remove(), 300);
+  }
+  // reward you on the leaderboard
+  playState.leaderboard.find(r => r.isYou).score = playState.found.size;
+  // bots inch up sometimes
+  playState.leaderboard.filter(r => !r.isYou).forEach(r => {
+    if (Math.random() < 0.45 && r.score < playState.items.length-1) r.score++;
+  });
+  renderChecklist();
+  renderLeaderboard();
+  showBanner(`+1 — ${playState.items[idx].emoji}`);
+  // small celebration confetti
+  if (window.confetti) {
+    confetti({ particleCount: 35, spread: 60, startVelocity: 30, origin: { y: 0.6 }, scalar: 0.7 });
+  }
+  if (playState.found.size >= playState.items.length) {
+    setTimeout(() => finishPlay(true), 400);
+  }
+}
+
+function showBanner(text) {
+  const stage = document.getElementById('playStage');
+  if (!stage) return;
+  const b = document.createElement('div');
+  b.className = 'play-banner';
+  b.textContent = text;
+  stage.appendChild(b);
+  setTimeout(() => b.remove(), 1700);
+}
+
+function startCamera() {
+  if (!navigator.mediaDevices?.getUserMedia) { document.getElementById('playFallback').style.display = 'grid'; return; }
+  navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false })
+    .then(stream => {
+      playState.stream = stream;
+      const v = document.getElementById('playVideo');
+      if (v) v.srcObject = stream;
+    })
+    .catch(() => {
+      document.getElementById('playFallback').style.display = 'grid';
+    });
+}
+
+function startTimer() {
+  let lastSec = -1;
+  const tick = () => {
+    if (!playState) return;
+    const left = Math.max(0, playState.deadline - Date.now());
+    const m = Math.floor(left/60000);
+    const s = Math.floor((left%60000)/1000);
+    const el = document.getElementById('playTimer');
+    if (el && s !== lastSec) {
+      lastSec = s;
+      el.textContent = `${m}:${String(s).padStart(2,'0')}`;
+      // visible pulse so the user can SEE it ticking
+      el.classList.remove('pulse');
+      void el.offsetWidth;
+      el.classList.add('pulse');
+      // turn red in the last 30 seconds
+      if (left <= 30000) el.classList.add('warn');
+    }
+    if (left <= 0) finishPlay(false);
+  };
+  tick();
+  playState.timerId = setInterval(tick, 250);
+}
+
+function finishPlay(allFound) {
+  if (!playState) return;
+  const id = playState.huntId;
+  const startedAt = playState.startedAt;
+  const foundCount = playState.found.size;
+  const finishedAt = Date.now();
+  // save play record
+  const hunt = getHunt(id);
+  if (hunt) {
+    hunt.plays = hunt.plays || [];
+    hunt.plays.push({ startedAt, finishedAt, foundCount });
+    upsertHunt(hunt);
+  }
+  stopPlay();
+  // restore the app shell wrapper — reassign the `app` variable, not just window.app
+  document.body.innerHTML = '<div id="app"></div>';
+  app = document.getElementById('app');
+  navigate('#/celebrate/' + id + '?found=' + foundCount + '&dur=' + (finishedAt - startedAt));
+}
+function exitPlay() {
+  if (!confirm('Leave the hunt? Your progress will be lost.')) return;
+  stopPlay();
+  document.body.innerHTML = '<div id="app"></div>';
+  app = document.getElementById('app');
+  navigate('#/home');
+}
+
+/* celebrate uses query string in the hash */
+function renderCelebrate(idAndQuery) {
+  // strip query
+  let id = idAndQuery, found = null, dur = null;
+  const q = idAndQuery.indexOf('?');
+  if (q >= 0) {
+    id = idAndQuery.slice(0, q);
+    const params = new URLSearchParams(idAndQuery.slice(q+1));
+    found = parseInt(params.get('found') || '0', 10);
+    dur   = parseInt(params.get('dur') || '0', 10);
+  }
+  const hunt = getHunt(id);
+  if (!hunt) { navigate('#/home'); return; }
+  const allFound = found != null && found >= hunt.itemCount;
+  const theme = getTheme(hunt.themeId);
+
+  app.innerHTML = `
+    <div class="page celebrate">
+      <span class="trophy">${allFound ? '🏆' : '🎉'}</span>
+      <div class="big">${allFound ? 'All Found!' : 'Hunt Complete'}</div>
+      <p style="max-width:420px; margin:0 auto;">
+        ${allFound ? `You collected every ${theme.emoji} item in <b>${escapeHTML(hunt.title)}</b>.`
+                   : `You collected ${found ?? 0} of ${hunt.itemCount} items.`}
+      </p>
+      <div class="stat-grid">
+        <div class="stat"><div class="n">${found ?? 0}/${hunt.itemCount}</div><div class="l">Items</div></div>
+        <div class="stat"><div class="n">${formatDur(dur || 0)}</div><div class="l">Time</div></div>
+        <div class="stat"><div class="n">${theme.emoji}</div><div class="l">${theme.name}</div></div>
+      </div>
+      <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px;">
+        <button class="btn btn-primary btn-lg" onclick="navigate('#/play/${hunt.id}')">▶ Play Again</button>
+        <button class="btn btn-soft btn-lg" onclick="navigate('#/share/${hunt.id}')">🔗 Share Hunt</button>
+        <button class="btn btn-ghost btn-lg" onclick="navigate('#/home')">Home</button>
+      </div>
+    </div>
+  `;
+  if (window.confetti) {
+    const burst = (x) => confetti({ particleCount: 80, spread: 80, origin: { x, y: 0.4 } });
+    burst(0.2); setTimeout(()=>burst(0.5), 200); setTimeout(()=>burst(0.8), 400);
+  }
+}
+
+/* ---------- Onboarding ---------- */
+const TUTORIAL_STEPS = [
+  { e:'✨', t:'Welcome to HuntMaster', d:'Create magical AR scavenger hunts in under 2 minutes — for parties, classrooms, Airbnb stays, and more.' },
+  { e:'🎨', t:'Pick a theme', d:'Choose from 10 playful themes. Each comes with its own items and clues.' },
+  { e:'📍', t:'Set your location', d:'Auto-detect with GPS or just name it ("Backyard", "Living Room"). LiDAR makes anchor placement extra accurate on supported iPhones.' },
+  { e:'🔗', t:'Share & play', d:'Share a link or QR code. Players join from any phone — no app required.' },
+];
+let tutorialIdx = 0;
+function maybeShowOnboarding() {
+  if (localStorage.getItem(ONBOARDED_KEY)) return;
+  tutorialIdx = 0;
+  showTutorialStep();
+}
+function showTutorialStep() {
+  const step = TUTORIAL_STEPS[tutorialIdx];
+  let el = document.getElementById('tutorial');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'tutorial';
+    el.className = 'tutorial';
+    document.body.appendChild(el);
+  }
+  el.innerHTML = `
+    <div class="tutorial-card">
+      <div class="e">${step.e}</div>
+      <h2>${step.t}</h2>
+      <p>${step.d}</p>
+      <div class="tutorial-dots">
+        ${TUTORIAL_STEPS.map((_,i) => `<div class="d ${i===tutorialIdx?'on':''}"></div>`).join('')}
+      </div>
+      <div style="display:flex; gap:8px; justify-content:center;">
+        <button class="btn btn-ghost" onclick="finishTutorial()">Skip</button>
+        <button class="btn btn-primary" onclick="advanceTutorial()">${tutorialIdx===TUTORIAL_STEPS.length-1?'Get Started':'Next →'}</button>
+      </div>
+    </div>
+  `;
+}
+function advanceTutorial() {
+  tutorialIdx++;
+  if (tutorialIdx >= TUTORIAL_STEPS.length) finishTutorial();
+  else showTutorialStep();
+}
+function finishTutorial() {
+  localStorage.setItem(ONBOARDED_KEY, '1');
+  const el = document.getElementById('tutorial');
+  if (el) el.remove();
+}
+
+/* ---------- Utilities ---------- */
+function escapeHTML(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function escapeJS(s) {
+  return String(s ?? '').replace(/['\\]/g, '\\$&');
+}
+
+/* ---------- Boot ---------- */
+let app;
+function boot() {
+  app = document.getElementById('app');
+  routeNow();
+}
+window.addEventListener('DOMContentLoaded', boot);
+</script>
+</body>
+</html>
