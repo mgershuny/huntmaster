@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>HuntMaster — AR Treasure Hunts in Minutes</title>
-<meta name="generator" content="HuntMaster v1 deployed via Cowork">
+<meta name="generator" content="HuntMaster v2.0.1 deployed via Cowork">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -358,6 +358,115 @@
     100% { opacity: 0; transform: translate(-50%, -60%) scale(0.95); }
   }
 
+  /* player onboarding (Start Hunt gate) */
+  .play-onboarding {
+    position: fixed; inset: 0; z-index: 90; overflow-y: auto;
+    background:
+      radial-gradient(circle at 20% 0%, rgba(124,58,237,0.45), transparent 50%),
+      radial-gradient(circle at 80% 100%, rgba(245,158,11,0.4), transparent 50%),
+      #0f0820;
+    padding: 24px 18px 40px;
+    display: flex; align-items: flex-start; justify-content: center;
+  }
+  .onboarding-card {
+    background: white; border-radius: var(--radius-xl); max-width: 520px; width: 100%;
+    padding: 28px 24px; box-shadow: var(--shadow-lg);
+    margin-top: max(8px, 4vh);
+    animation: fadeUp 0.4s ease;
+  }
+  .onboarding-emoji {
+    font-size: 80px; text-align: center; margin: 4px 0 4px;
+    animation: bobBig 2.6s ease-in-out infinite;
+  }
+  @keyframes bobBig { 0%,100% { transform: translateY(0) rotate(-3deg); } 50% { transform: translateY(-8px) rotate(3deg); } }
+  .onboarding-card h1 {
+    text-align: center; font-size: 32px; margin: 0 0 4px;
+    background: linear-gradient(135deg, var(--primary), var(--accent-2));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .onboarding-card .invited-line {
+    text-align: center; color: var(--muted); font-size: 14px; margin-bottom: 4px;
+  }
+  .onboarding-card h2 {
+    text-align: center; font-size: 22px; color: var(--ink); margin: 0 0 6px;
+  }
+  .onboarding-tagline {
+    text-align: center; font-size: 16px; color: var(--ink-soft);
+    margin: 6px auto 16px; max-width: 360px;
+  }
+  .how-to {
+    background: linear-gradient(135deg, rgba(124,58,237,0.08), rgba(236,72,153,0.05));
+    border-radius: var(--radius-lg); padding: 14px 16px; margin: 14px 0;
+  }
+  .how-step {
+    display: flex; align-items: center; gap: 12px; padding: 8px 0;
+    font-size: 16px; color: var(--ink);
+  }
+  .how-step + .how-step { border-top: 1px dashed rgba(124,58,237,0.18); }
+  .how-num {
+    flex: none; width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--accent-2));
+    color: white; display: grid; place-items: center;
+    font-family: 'Fredoka', sans-serif; font-weight: 700; font-size: 14px;
+  }
+  .hunt-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin: 14px 0; text-align: center;
+  }
+  .hunt-stats > div {
+    background: var(--cream); border-radius: var(--radius); padding: 10px 6px;
+    font-size: 13px; color: var(--ink-soft);
+  }
+  .hunt-stats strong {
+    display: block; font-family: 'Fredoka', sans-serif; font-size: 24px;
+    color: var(--primary); margin-bottom: 2px;
+  }
+  .start-btn {
+    width: 100%; padding: 18px 22px; font-size: 20px; margin-top: 12px;
+    background: linear-gradient(135deg, var(--mint), var(--sky));
+    box-shadow: 0 10px 28px rgba(16,185,129,0.45);
+  }
+  .start-btn:hover { box-shadow: 0 14px 36px rgba(16,185,129,0.55); }
+  .perms-note {
+    margin-top: 12px; font-size: 12px; color: var(--muted); text-align: center;
+  }
+
+  /* range slider */
+  .slider-wrap { display: flex; align-items: center; gap: 14px; }
+  .slider-wrap input[type=range] {
+    flex: 1; -webkit-appearance: none; appearance: none;
+    height: 8px; border-radius: 4px;
+    background: linear-gradient(to right, var(--primary), var(--accent-2));
+    outline: none;
+  }
+  .slider-wrap input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; appearance: none;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: white; border: 3px solid var(--primary);
+    box-shadow: var(--shadow-sm); cursor: pointer;
+  }
+  .slider-wrap input[type=range]::-moz-range-thumb {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: white; border: 3px solid var(--primary);
+    box-shadow: var(--shadow-sm); cursor: pointer;
+  }
+  .slider-label {
+    background: var(--primary); color: white; padding: 6px 14px;
+    border-radius: 100px; font-family: 'Fredoka', sans-serif; font-weight: 600;
+    min-width: 88px; text-align: center;
+  }
+
+  /* hint banner during play (warmer/colder, look around) */
+  .hunt-hint {
+    position: absolute; left: 50%; top: 100px; transform: translateX(-50%);
+    background: rgba(0,0,0,0.6); padding: 10px 18px; border-radius: 100px;
+    font-size: 13px; color: white; max-width: 86%; text-align: center;
+    backdrop-filter: blur(10px);
+    z-index: 3;
+    transition: opacity .3s ease;
+    pointer-events: none;
+  }
+
   /* placement reticle */
   .reticle-wrap { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; }
   .reticle {
@@ -568,6 +677,44 @@ function getTheme(id) { return THEMES.find(t => t.id === id) || THEMES[0]; }
 
 function uid() { return Math.random().toString(36).slice(2, 9); }
 
+/* ---------- Device capabilities ---------- */
+const DEVICE = (() => {
+  const ua = navigator.userAgent || '';
+  const isIPadOS = navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1;
+  const isIOS = /iPhone|iPad|iPod/.test(ua) || isIPadOS;
+  const isAndroid = /Android/.test(ua);
+  const isMobile = isIOS || isAndroid || /Mobi|Tablet/.test(ua);
+  const os = isIOS ? 'ios' : isAndroid ? 'android' : isMobile ? 'mobile' : 'desktop';
+  return {
+    os,
+    isIOS, isAndroid, isMobile,
+    hasCamera: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+    hasOrientation: typeof DeviceOrientationEvent !== 'undefined',
+    hasMotion: typeof DeviceMotionEvent !== 'undefined',
+    hasGeolocation: !!navigator.geolocation,
+    // Browsers don't expose iPhone sub-model. LiDAR is on iPhone Pro 12+ only.
+    // We can say "may have LiDAR" when on iOS but not confirm.
+    mayHaveLidar: isIOS,
+    canScanWithLidar: false, // would need a native AR session probe to truly confirm
+    deviceLabel: isIOS ? 'iPhone / iPad' : isAndroid ? 'Android' : isMobile ? 'Mobile' : 'Desktop',
+  };
+})();
+
+function lidarStatusText() {
+  if (DEVICE.isIOS) {
+    return {
+      ok: true,
+      label: 'Maybe ✓',
+      detail: 'LiDAR scanning works on <b>iPhone Pro</b> models (12 Pro and newer). On other iPhones we use the standard camera placement — same hunt, just slightly less precise anchoring.'
+    };
+  }
+  return {
+    ok: false,
+    label: 'Not on this device',
+    detail: 'LiDAR scanning is an Apple feature that needs an <b>iPhone Pro (12 Pro or newer)</b>. You\'re on ' + DEVICE.deviceLabel + ' — the standard camera-based placement still works perfectly. To use LiDAR, switch to a Pro iPhone for the create step (players can still use any phone).'
+  };
+}
+
 /* URL-safe base64 (no +, /, or = padding) so the hunt fits cleanly in the URL */
 function b64UrlEncode(str) {
   return btoa(unescape(encodeURIComponent(str)))
@@ -587,7 +734,11 @@ function encodeHuntForUrl(hunt) {
     itemCount: hunt.itemCount,
     timeLimit: hunt.timeLimit,
     location: hunt.location,
-    items: (hunt.items || []).map(it => ({ emoji: it.emoji, clue: it.clue, position: it.position })),
+    proximityFt: hunt.proximityFt || 5,
+    items: (hunt.items || []).map(it => ({
+      emoji: it.emoji, clue: it.clue,
+      position: it.position, orientation: it.orientation, geo: it.geo
+    })),
   };
   return 'h_' + b64UrlEncode(JSON.stringify(slim));
 }
@@ -811,7 +962,8 @@ function pickCount(n) { draft.itemCount = n; renderCreateItems(); }
 function renderCreateSettings() {
   if (!draft || !draft.themeId) { navigate('#/create/theme'); return; }
   const theme = getTheme(draft.themeId);
-  const supportsLidar = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  const lidar = lidarStatusText();
+  const proximityFt = draft.proximityFt || 5;
   app.innerHTML = `
     <div class="page">
       ${topbar(true)}
@@ -841,12 +993,22 @@ function renderCreateSettings() {
       </div>
 
       <div class="form-group">
-        <div class="toggle-row">
-          <div>
-            <div style="font-weight:600">Use LiDAR</div>
-            <div class="help">Better accuracy on iPhone 12 Pro and newer ${supportsLidar ? '' : '(iOS only)'}</div>
+        <label class="label">How close before items appear?</label>
+        <div class="slider-wrap">
+          <input type="range" min="1" max="25" step="1" value="${proximityFt}" id="proximity" oninput="updateProximityLabel(this.value)">
+          <div class="slider-label" id="proximityLabel">${proximityFt} ft</div>
+        </div>
+        <div class="help">Players need to be within this distance AND looking the right way for an item to appear. Smaller = harder. Larger = more forgiving.</div>
+      </div>
+
+      <div class="form-group">
+        <div class="toggle-row" ${lidar.ok ? '' : 'style="opacity:.6"'}>
+          <div style="flex:1; min-width:0">
+            <div style="font-weight:600">Use LiDAR for placement</div>
+            <div class="help">${DEVICE.deviceLabel} detected — <b>${lidar.label}</b></div>
+            <div style="font-size:12px; color:var(--ink-soft); margin-top:6px">${lidar.detail}</div>
           </div>
-          <div class="toggle ${draft.useLidar?'on':''}" onclick="toggleLidar()"></div>
+          <div class="toggle ${draft.useLidar && lidar.ok ?'on':''}" onclick="${lidar.ok ? 'toggleLidar()' : 'toast(\\'LiDAR needs an iPhone Pro — switch devices to use it.\\')'}"></div>
         </div>
       </div>
 
@@ -858,7 +1020,16 @@ function renderCreateSettings() {
   `;
 }
 function pickTime(t) { draft.timeLimit = t; renderCreateSettings(); }
-function toggleLidar() { draft.useLidar = !draft.useLidar; renderCreateSettings(); }
+function toggleLidar() {
+  if (!lidarStatusText().ok) return;
+  draft.useLidar = !draft.useLidar;
+  renderCreateSettings();
+}
+function updateProximityLabel(v) {
+  draft.proximityFt = parseInt(v, 10);
+  const el = document.getElementById('proximityLabel');
+  if (el) el.textContent = v + ' ft';
+}
 function autoLocate() {
   if (!navigator.geolocation) { toast('Geolocation not available'); return; }
   navigator.geolocation.getCurrentPosition(
@@ -874,12 +1045,17 @@ function autoLocate() {
 function finishCreate() {
   draft.title = (document.getElementById('title')?.value || '').trim() || 'My Hunt';
   draft.location = (document.getElementById('location')?.value || '').trim();
+  const slider = document.getElementById('proximity');
+  if (slider) draft.proximityFt = parseInt(slider.value, 10) || 5;
+  if (!draft.proximityFt) draft.proximityFt = 5;
   const theme = getTheme(draft.themeId);
   // Pre-bake item slots from the theme (no positions yet — set during placement)
   draft.items = Array.from({ length: draft.itemCount }, (_, i) => ({
     emoji: theme.items[i % theme.items.length],
     clue: autoClue(theme, i),
     position: null,
+    orientation: null,
+    geo: null,
   }));
   upsertHunt(draft);
   const id = draft.id;
@@ -901,6 +1077,10 @@ function stopPlace() {
   if (placeState && placeState.stream) {
     placeState.stream.getTracks().forEach(t => t.stop());
   }
+  if (placeState && placeState.geoWatchId != null) {
+    navigator.geolocation.clearWatch(placeState.geoWatchId);
+  }
+  stopOrientationTracking();
   placeState = null;
 }
 
@@ -965,6 +1145,50 @@ function startPlaceCamera() {
     .catch(() => {
       document.getElementById('placeFallback').style.display = 'grid';
     });
+  // Live orientation tracking — captured into the item on Drop Here
+  startOrientationTracking((o) => { if (placeState) placeState.lastOrientation = o; });
+  // Geolocation watch
+  if (navigator.geolocation) {
+    placeState.geoWatchId = navigator.geolocation.watchPosition(
+      (pos) => { if (placeState) placeState.lastGeo = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy }; },
+      () => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    );
+  }
+}
+
+/* Cross-browser orientation tracking. iOS Safari needs an explicit permission request. */
+let _orientationListener = null;
+function startOrientationTracking(cb) {
+  stopOrientationTracking();
+  const requestIfNeeded = () => {
+    if (typeof DeviceOrientationEvent !== 'undefined' &&
+        typeof DeviceOrientationEvent.requestPermission === 'function') {
+      // iOS 13+
+      DeviceOrientationEvent.requestPermission().then(state => {
+        if (state === 'granted') wireUp();
+      }).catch(()=>{});
+    } else {
+      wireUp();
+    }
+  };
+  const wireUp = () => {
+    _orientationListener = (e) => {
+      cb({
+        // alpha: compass heading, 0..360 (0 = north). On iOS, use webkitCompassHeading if available
+        alpha: (e.webkitCompassHeading !== undefined) ? e.webkitCompassHeading : (e.alpha ?? null),
+        beta:  e.beta ?? null,   // -180..180, front-back tilt
+        gamma: e.gamma ?? null,  // -90..90, left-right tilt
+      });
+    };
+    window.addEventListener('deviceorientation', _orientationListener, true);
+  };
+  requestIfNeeded();
+}
+function stopOrientationTracking() {
+  if (_orientationListener) {
+    window.removeEventListener('deviceorientation', _orientationListener, true);
+    _orientationListener = null;
+  }
 }
 
 function dropHere() {
@@ -977,6 +1201,14 @@ function dropHere() {
   const jx = (Math.random() - 0.5) * 30;
   const jy = (Math.random() - 0.5) * 30;
   hunt.items[i].position = { x: 50 + jx, y: 50 + jy };
+  // Capture device orientation (compass + tilt) — for in-view detection during play
+  if (placeState.lastOrientation) {
+    hunt.items[i].orientation = { ...placeState.lastOrientation };
+  }
+  // Capture geolocation — for proximity gating during play
+  if (placeState.lastGeo) {
+    hunt.items[i].geo = { ...placeState.lastGeo };
+  }
   upsertHunt(hunt);
   // visual flash
   const stage = document.getElementById('placeStage');
@@ -1241,13 +1473,18 @@ function shareTo(target, url, title) {
   window.open(href, '_blank');
 }
 
-/* ---------- Play (simulated AR) ---------- */
+/* ---------- Play (gated onboarding + simulated AR) ---------- */
 let playState = null;
 function stopPlay() {
   if (playState && playState.timerId) clearInterval(playState.timerId);
+  if (playState && playState.revealLoop) clearInterval(playState.revealLoop);
   if (playState && playState.stream) {
     playState.stream.getTracks().forEach(t => t.stop());
   }
+  if (playState && playState.geoWatchId != null && navigator.geolocation) {
+    navigator.geolocation.clearWatch(playState.geoWatchId);
+  }
+  stopOrientationTracking();
   playState = null;
 }
 
@@ -1256,30 +1493,99 @@ function renderPlay(idOrEncoded) {
   let hunt = getHunt(idOrEncoded);
   if (!hunt) hunt = decodeHuntFromUrl(idOrEncoded);
   if (!hunt) { navigate('#/home'); return; }
+  // If the hunt came from a shared link, save it locally so the recipient sees it on their Home screen
+  if (idOrEncoded.startsWith('h_') && !getHunt(hunt.id)) {
+    upsertHunt(hunt);
+  }
   const id = hunt.id;
   const theme = getTheme(hunt.themeId);
-  // initial state
   playState = {
-    huntId: id,
-    startedAt: Date.now(),
-    deadline: Date.now() + hunt.timeLimit * 60 * 1000,
+    huntId: id, hunt, theme,
+    started: false, startedAt: null, deadline: null,
     found: new Set(),
     items: hunt.items.map((it, i) => ({
       ...it, idx: i,
-      // honor placed positions; otherwise scatter randomly
       x: it.position?.x ?? (15 + Math.random()*70),
       y: it.position?.y ?? (25 + Math.random()*55),
     })),
     leaderboard: [
-      { name: 'You',   score: 0, isYou: true },
+      { name: 'You',    score: 0, isYou: true },
       { name: 'Sage',   score: Math.floor(Math.random()*hunt.itemCount*0.4) },
       { name: 'Zoë',    score: Math.floor(Math.random()*hunt.itemCount*0.4) },
       { name: 'Quessa', score: Math.floor(Math.random()*hunt.itemCount*0.4) },
     ],
-    timerId: null,
-    stream: null,
+    timerId: null, stream: null,
+    currentOrientation: null, currentGeo: null,
+    geoWatchId: null, revealLoop: null,
   };
+  // Show onboarding gate first — timer doesn't start until they tap Start Hunt!
+  renderPlayOnboarding();
+}
 
+function playerIntroFor(theme, hunt) {
+  const e = theme.emoji;
+  const tname = theme.name.toLowerCase();
+  return {
+    tagline: `Walk around the space and find hidden ${e} ${tname} items!`,
+    steps: [
+      `📱 Hold your phone up like a flashlight`,
+      `🚶 Walk around slowly to look in different spots`,
+      `👀 When a ${e} appears on the screen — tap it!`,
+      `🏆 Find all ${hunt.itemCount} before time runs out`,
+    ],
+  };
+}
+
+function renderPlayOnboarding() {
+  if (!playState) return;
+  const { hunt, theme } = playState;
+  const intro = playerIntroFor(theme, hunt);
+  const proxFt = hunt.proximityFt || 5;
+  document.body.innerHTML = `
+    <div class="play-onboarding">
+      <div class="onboarding-card">
+        <div class="invited-line">You've been invited to play</div>
+        <h1>${escapeHTML(hunt.title)}</h1>
+        <div class="onboarding-emoji">${theme.emoji}</div>
+        <p class="onboarding-tagline">${intro.tagline}</p>
+        <div class="how-to">
+          ${intro.steps.map((s,i) => `<div class="how-step"><span class="how-num">${i+1}</span><span>${s}</span></div>`).join('')}
+        </div>
+        <div class="hunt-stats">
+          <div><strong>${hunt.itemCount}</strong>items to find</div>
+          <div><strong>${hunt.timeLimit}</strong>minutes</div>
+          <div><strong>${proxFt}ft</strong>nearby zone</div>
+        </div>
+        <button class="btn start-btn" onclick="startTheHunt()">▶ Start Hunt!</button>
+        <div class="perms-note">Your phone may ask for camera, motion, and location — it needs them to find items in your space. ${hunt.location ? `📍 ${escapeHTML(hunt.location)}` : ''}</div>
+        <button class="btn btn-ghost" style="width:100%; margin-top:8px" onclick="exitPlay()">← Cancel</button>
+      </div>
+    </div>
+  `;
+}
+
+function startTheHunt() {
+  if (!playState || playState.started) return;
+  playState.started = true;
+  playState.startedAt = Date.now();
+  playState.deadline  = Date.now() + playState.hunt.timeLimit * 60 * 1000;
+  renderPlayUI();
+  startCamera();
+  startTimer();
+  // Live orientation + geolocation while playing
+  startOrientationTracking((o) => { if (playState) playState.currentOrientation = o; });
+  if (navigator.geolocation) {
+    playState.geoWatchId = navigator.geolocation.watchPosition(
+      (pos) => { if (playState) playState.currentGeo = { lat: pos.coords.latitude, lng: pos.coords.longitude }; },
+      () => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+    );
+  }
+  // Continuously decide which items are "in view + in range"
+  playState.revealLoop = setInterval(updateItemVisibility, 200);
+}
+
+function renderPlayUI() {
+  const { hunt, theme } = playState;
   document.body.innerHTML = `
     <div class="play-shell">
       <div class="play-header">
@@ -1293,9 +1599,10 @@ function renderPlay(idOrEncoded) {
           <div>
             <div style="font-size:64px">${theme.emoji}</div>
             <h2 style="color:white">Camera off</h2>
-            <p style="color:rgba(255,255,255,0.85); max-width:340px">Items will appear in this play space — tap them to collect.</p>
+            <p style="color:rgba(255,255,255,0.85); max-width:340px">Items still appear here when you're close enough. Tap to collect.</p>
           </div>
         </div>
+        <div class="hunt-hint" id="huntHint">Look around — items appear when you're close and pointing the right way</div>
         <div class="leaderboard" id="leaderboard"></div>
         <div id="arItems"></div>
       </div>
@@ -1312,10 +1619,102 @@ function renderPlay(idOrEncoded) {
   renderChecklist();
   renderLeaderboard();
   placeArItems();
-  startCamera();
-  startTimer();
-  // re-position items if window resizes
   window.addEventListener('resize', placeArItems);
+  updateItemVisibility();
+}
+
+function haversineMeters(a, b) {
+  if (!a || !b) return Infinity;
+  const R = 6371000, toRad = d => d * Math.PI / 180;
+  const dLat = toRad(b.lat - a.lat);
+  const dLng = toRad(b.lng - a.lng);
+  const sa = Math.sin(dLat/2)**2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(sa));
+}
+
+function orientationOffset(cur, target) {
+  let dHeading = 0;
+  if (cur.alpha != null && target.alpha != null) {
+    let raw = target.alpha - cur.alpha;
+    while (raw > 180) raw -= 360;
+    while (raw < -180) raw += 360;
+    dHeading = raw;
+  }
+  let dTilt = 0;
+  if (cur.beta != null && target.beta != null) dTilt = target.beta - cur.beta;
+  return { dx: dHeading, dy: dTilt };
+}
+
+function updateItemVisibility() {
+  if (!playState || !playState.started) return;
+  const proxFt = playState.hunt.proximityFt || 5;
+  const proxM = proxFt * 0.3048;
+  const angleTol = 35;   // degrees of view tolerance
+  let anyVisible = false;
+  let bestHidden = null; // closest item still hidden (for the hint)
+
+  for (const it of playState.items) {
+    if (playState.found.has(it.idx)) continue;
+    const el = document.getElementById('ar-' + it.idx);
+    if (!el) continue;
+    const hasOrient = it.orientation && playState.currentOrientation;
+    const hasGeo    = it.geo         && playState.currentGeo;
+    // No orientation/geo data on item AND no live data → fall back to fixed positions (desktop)
+    if (!it.orientation && !it.geo) {
+      el.style.display = '';
+      anyVisible = true;
+      continue;
+    }
+    let inRange = true, distM = 0;
+    if (hasGeo) {
+      distM = haversineMeters(playState.currentGeo, it.geo);
+      inRange = distM <= proxM;
+    }
+    let inView = true, dx = 0, dy = 0;
+    if (hasOrient) {
+      const r = orientationOffset(playState.currentOrientation, it.orientation);
+      dx = r.dx; dy = r.dy;
+      inView = Math.abs(dx) <= angleTol && Math.abs(dy) <= angleTol;
+    }
+    if (inRange && inView) {
+      // Position based on angular offset (centered when looking right at it)
+      const sx = Math.max(8, Math.min(92, 50 + (dx / angleTol) * 35));
+      const sy = Math.max(15, Math.min(85, 50 + (dy / angleTol) * 35));
+      el.style.left = sx + '%';
+      el.style.top  = sy + '%';
+      el.style.display = '';
+      anyVisible = true;
+    } else {
+      el.style.display = 'none';
+      // pick the closest-yet-hidden item to drive the hint
+      if (!bestHidden || distM < bestHidden.distM) bestHidden = { it, distM, dx, dy, inRange, inView };
+    }
+  }
+
+  const hint = document.getElementById('huntHint');
+  if (hint) {
+    if (anyVisible) {
+      hint.style.opacity = '0';
+    } else if (bestHidden) {
+      let txt;
+      if (!bestHidden.inRange) {
+        txt = bestHidden.distM < 30 ? '🌡️ Getting warm — keep walking…' : '🚶 Walk around to get closer';
+      } else if (!bestHidden.inView) {
+        txt = bestHidden.dx < -10 ? '⬅️  Try looking left' :
+              bestHidden.dx >  10 ? 'Try looking right ➡️' :
+              bestHidden.dy < -10 ? '⬆️  Try looking up' :
+              bestHidden.dy >  10 ? '⬇️  Try looking down' :
+              'Look around slowly — getting close!';
+      } else {
+        txt = 'Almost there!';
+      }
+      hint.textContent = txt;
+      hint.style.opacity = '1';
+    } else {
+      hint.textContent = 'Walk around to find hidden items';
+      hint.style.opacity = '1';
+    }
+  }
 }
 
 function renderChecklist() {
@@ -1340,9 +1739,12 @@ function renderLeaderboard() {
 function placeArItems() {
   const stage = document.getElementById('arItems');
   if (!stage || !playState) return;
+  // Start hidden — updateItemVisibility() decides what to reveal based on
+  // device direction + proximity. Items with no orientation/geo (desktop)
+  // get revealed at their fixed screen position.
   stage.innerHTML = playState.items.map(it => `
     <div class="ar-item" id="ar-${it.idx}" data-idx="${it.idx}"
-         style="left:${it.x}%; top:${it.y}%;${playState.found.has(it.idx) ? 'display:none' : ''}">
+         style="left:${it.x}%; top:${it.y}%; display:none">
       ${it.emoji}<span class="glow"></span>
     </div>
   `).join('');
@@ -1444,7 +1846,10 @@ function finishPlay(allFound) {
   navigate('#/celebrate/' + id + '?found=' + foundCount + '&dur=' + (finishedAt - startedAt));
 }
 function exitPlay() {
-  if (!confirm('Leave the hunt? Your progress will be lost.')) return;
+  // If they haven't tapped Start yet, no progress to lose — just back out
+  if (playState && playState.started) {
+    if (!confirm('Leave the hunt? Your progress will be lost.')) return;
+  }
   stopPlay();
   document.body.innerHTML = '<div id="app"></div>';
   app = document.getElementById('app');
