@@ -1,0 +1,11 @@
+# HuntMaster on Render — one-click deploy
+# https://render.com — free tier supports Node.js + WebSocket
+
+services:
+  - type: web
+    name: huntmaster
+    env: node
+    buildCommand: cd server && npm install
+    startCommand: cd server && node server.js
+    plan: free
+    autoDeploy: true

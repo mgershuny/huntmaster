@@ -98,6 +98,7 @@
   .btn-soft { background: white; color: var(--ink); box-shadow: var(--shadow-sm); }
   .btn-soft:hover { box-shadow: var(--shadow-md); }
   .btn-icon { padding: 10px; border-radius: 12px; }
+  .btn-sm { padding: 8px 14px; font-size: 13px; border-radius: var(--radius-sm); }
   .btn-block { display: flex; width: 100%; }
   .btn-lg { padding: 18px 26px; font-size: 18px; border-radius: var(--radius-lg); }
 
@@ -540,6 +541,19 @@
   .leaderboard .lr { display: flex; justify-content: space-between; padding: 3px 0; }
   .leaderboard .lr.you { color: var(--accent); font-weight: 600; }
 
+  /* presence bar */
+  .presence-bar {
+    display: flex; gap: 6px; padding: 6px 18px;
+    background: linear-gradient(180deg, rgba(0,0,0,0.3), transparent);
+    justify-content: center; z-index: 2; position: relative;
+  }
+  .presence-dot {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 700;
+    font-size: 12px; color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    text-transform: uppercase;
+  }
+
   /* celebrate */
   .celebrate {
     text-align: center; padding: 60px 20px;
@@ -645,10 +659,24 @@ const TEMPLATES = [
 
 const ITEM_COUNTS = [6, 8, 10, 12];
 const TIME_LIMITS = [20, 30, 45, 60];
+const DIFFICULTIES = [
+  { id:'easy',   name:'Easy',   emoji:'🌱', proxMult:2.0, angleMult:1.5, timeMult:1.5 },
+  { id:'medium', name:'Medium', emoji:'⚡', proxMult:1.0, angleMult:1.0, timeMult:1.0 },
+  { id:'hard',   name:'Hard',   emoji:'💎', proxMult:0.6, angleMult:0.55, timeMult:0.75 },
+];
 
 const STORAGE_KEY = 'huntmaster.hunts.v1';
 const ONBOARDED_KEY = 'huntmaster.onboarded.v1';
 const PLACE_TUTORIAL_KEY = 'huntmaster.placetutorial.v1';
+const PLAYER_NAME_KEY = 'huntmaster.playername.v1';
+
+// WebSocket multiplayer — auto-detect from current host, or use env override
+const WS_URL = (() => {
+  if (location.protocol === 'file:') return null; // local file — no multiplayer
+  if (location.hostname === 'localhost' || location.hostname === '127.0.0.1')
+    return 'ws://' + location.host;
+  return 'wss://' + location.host; // production — uses same host for WS upgrade
+})();
 
 const PLACEMENT_STEPS = [
   { e:'📱', t:'Hold like a wand',     d:"Hold your phone in front of you like you're aiming a magic wand at the spot you want to hide an item." },
@@ -765,8 +793,228 @@ function newDraft(seed = {}) {
     location: '',
     timeLimit: 30,
     useLidar: false,
+    difficulty: 'medium',
     createdAt: Date.now(),
   }, seed);
+}
+
+/* ---------- WebSocket Multiplayer Manager ---------- */
+let ws = null;
+let wsReconnectTimer = null;
+
+function wsConnect(huntId, playerName, itemCount) {
+  if (!WS_URL) return;
+  wsDisconnect();
+  try {
+    ws = new WebSocket(WS_URL);
+  } catch (e) { return; }
+
+  ws.onopen = () => {
+    ws.send(JSON.stringify({ type: 'join', huntId, playerName, itemCount }));
+  };
+
+  ws.onmessage = (e) => {
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+
+    switch (msg.type) {
+      case 'joined':
+        if (playState) {
+          playState.playerId = msg.playerId;
+          // Mark items already found by others as unavailable
+          if (msg.itemsAlreadyFound) {
+            for (const idx of msg.itemsAlreadyFound) {
+              if (playState.items[idx]) {
+                playState.items[idx].takenByOther = true;
+              }
+            }
+          }
+          updateMultiLeaderboard(msg.leaderboard || []);
+          updatePresence(msg.presence || []);
+          updateItemVisibility();
+        }
+        break;
+
+      case 'player_joined':
+        updatePresence(msg.presence || []);
+        updateMultiLeaderboard(msg.leaderboard || []);
+        showBanner(`${msg.playerName} joined! 👋`);
+        break;
+
+      case 'player_left':
+        updatePresence(msg.presence || []);
+        updateMultiLeaderboard(msg.leaderboard || []);
+        break;
+
+      case 'item_collected':
+        if (playState) {
+          const it = playState.items[msg.itemIdx];
+          if (it && !playState.found.has(msg.itemIdx)) {
+            it.takenByOther = true;
+            // Flash it red briefly
+            const el = document.getElementById('ar-' + msg.itemIdx);
+            if (el) {
+              el.style.opacity = '0.3';
+              el.style.pointerEvents = 'none';
+              setTimeout(() => { if (el) el.style.display = 'none'; }, 600);
+            }
+          }
+          updateMultiLeaderboard(msg.leaderboard || []);
+          updateItemVisibility();
+        }
+        break;
+
+      case 'hunt_complete':
+        if (playState && !playState._completed) {
+          playState._completed = true;
+          showBanner(msg.message || 'All items found! 🎉');
+          updateMultiLeaderboard(msg.leaderboard || []);
+          setTimeout(() => finishPlay(true), 1500);
+        }
+        break;
+
+      case 'pong': break;
+    }
+  };
+
+  ws.onclose = () => {
+    ws = null;
+    // Auto-reconnect after 3s
+    wsReconnectTimer = setTimeout(() => {
+      if (playState && playState.started) {
+        wsConnect(huntId, playerName, itemCount);
+      }
+    }, 3000);
+  };
+
+  ws.onerror = () => {}; // silent — onclose handles it
+}
+
+function wsDisconnect() {
+  if (wsReconnectTimer) { clearTimeout(wsReconnectTimer); wsReconnectTimer = null; }
+  if (ws) {
+    try { ws.send(JSON.stringify({ type: 'leave' })); } catch {}
+    try { ws.close(); } catch {}
+    ws = null;
+  }
+}
+
+function wsCollect(itemIdx) {
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'collect', itemIdx }));
+  }
+}
+
+function wsPing() {
+  if (ws && ws.readyState === 1) {
+    ws.send(JSON.stringify({ type: 'ping' }));
+  }
+}
+
+function updateMultiLeaderboard(entries) {
+  if (!playState) return;
+  playState.leaderboard = entries;
+  renderLeaderboard();
+}
+
+function updatePresence(entries) {
+  if (!playState) return;
+  playState.presence = entries;
+  renderPresence();
+}
+
+/* ---------- Sound Engine (Web Audio API) ---------- */
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch {}
+  }
+  return audioCtx;
+}
+
+const SoundFX = {
+  /** Short chime on item collection */
+  collect() {
+    const ctx = getAudioCtx(); if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, now);
+    osc.frequency.exponentialRampToValueAtTime(1320, now + 0.08);
+    osc.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
+    gain.gain.setValueAtTime(0.3, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now); osc.stop(now + 0.3);
+  },
+
+  /** Hunt complete fanfare */
+  fanfare() {
+    const ctx = getAudioCtx(); if (!ctx) return;
+    const now = ctx.currentTime;
+    [523, 659, 784, 1047].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + i * 0.15);
+      gain.gain.linearRampToValueAtTime(0.25, now + i * 0.15 + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.5);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now + i * 0.15); osc.stop(now + i * 0.15 + 0.5);
+    });
+  },
+
+  /** Start beeps: 3... 2... 1... GO! */
+  countdown() {
+    const ctx = getAudioCtx(); if (!ctx) return;
+    const now = ctx.currentTime;
+    [440, 440, 440, 880].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      const t = now + i * 0.5;
+      gain.gain.setValueAtTime(0.15, t);
+      gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t); osc.stop(t + 0.15);
+    });
+  },
+
+  /** Proximity beep — faster = closer */
+  proximityPing(distanceRatio) {
+    const ctx = getAudioCtx(); if (!ctx) return;
+    if (this._lastPing && Date.now() - this._lastPing < 300 + distanceRatio * 1500) return;
+    this._lastPing = Date.now();
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 600 + (1 - distanceRatio) * 400;
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(now); osc.stop(now + 0.1);
+  },
+
+  _lastPing: 0,
+};
+
+/* ---------- Photo Capture ---------- */
+function capturePhoto() {
+  if (!playState || !playState.stream) return null;
+  const video = document.getElementById('playVideo');
+  if (!video || video.readyState < 2) return null;
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL('image/jpeg', 0.7);
+  } catch { return null; }
 }
 
 /* ---------- Router ---------- */
@@ -825,13 +1073,15 @@ function renderHome() {
     : hunts.map(h => {
         const theme = getTheme(h.themeId);
         const playCount = (h.plays || []).length;
+        const completedCount = (h.plays || []).filter(p => p.completed).length;
+        const diffEmoji = (DIFFICULTIES.find(d => d.id === h.difficulty) || {}).emoji || '';
         return `
         <div class="card" style="margin-bottom:10px">
           <div class="card-row" onclick="navigate('#/hunt/${h.id}')">
             <div class="card-emoji" style="background:${theme.grad}; color:white">${theme.emoji}</div>
             <div class="card-body">
               <h3>${escapeHTML(h.title || 'Untitled hunt')}</h3>
-              <div class="meta">${theme.name} • ${h.itemCount} items • ${h.timeLimit} min ${playCount ? `• ${playCount} play${playCount>1?'s':''}` : ''}</div>
+              <div class="meta">${theme.name} • ${h.itemCount} items • ${h.timeLimit} min ${playCount ? `• ${playCount} play${playCount>1?'s':''}${completedCount ? ` (${Math.round(completedCount/playCount*100)}%)` : ''}` : ''} ${diffEmoji}</div>
             </div>
             <div class="chev">›</div>
           </div>
@@ -1002,6 +1252,14 @@ function renderCreateSettings() {
       </div>
 
       <div class="form-group">
+        <label class="label">Difficulty</label>
+        <div class="pills">
+          ${DIFFICULTIES.map(d => `<div class="pill-toggle ${draft.difficulty===d.id?'selected':''}" onclick="pickDifficulty('${d.id}')">${d.emoji} ${d.name}</div>`).join('')}
+        </div>
+        <div class="help">Affects proximity range, view angle, and time limit for players.</div>
+      </div>
+
+      <div class="form-group">
         <div class="toggle-row" ${lidar.ok ? '' : 'style="opacity:.6"'}>
           <div style="flex:1; min-width:0">
             <div style="font-weight:600">Use LiDAR for placement</div>
@@ -1020,6 +1278,7 @@ function renderCreateSettings() {
   `;
 }
 function pickTime(t) { draft.timeLimit = t; renderCreateSettings(); }
+function pickDifficulty(id) { draft.difficulty = id; renderCreateSettings(); }
 function toggleLidar() {
   if (!lidarStatusText().ok) return;
   draft.useLidar = !draft.useLidar;
@@ -1333,10 +1592,26 @@ function renderHuntDetail(id) {
           <div style="font-size:46px">${theme.emoji}</div>
           <div>
             <h1 style="color:white; margin:0">${escapeHTML(hunt.title)}</h1>
-            <div style="opacity:.9">${theme.name} • ${hunt.itemCount} items • ${hunt.timeLimit} min</div>
+            <div style="opacity:.9">${theme.name} • ${hunt.itemCount} items • ${hunt.timeLimit} min ${hunt.difficulty ? `• ${(DIFFICULTIES.find(d=>d.id===hunt.difficulty)||{}).emoji||'⚡'} ${hunt.difficulty}` : ''}</div>
           </div>
         </div>
         ${hunt.location ? `<p style="color:rgba(255,255,255,0.9); margin-top:14px">📍 ${escapeHTML(hunt.location)}</p>` : ''}
+        ${(hunt.plays && hunt.plays.length) ? `
+        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:14px; text-align:center">
+          <div style="background:rgba(255,255,255,0.18); border-radius:12px; padding:10px 6px">
+            <div style="font-size:22px; font-weight:700">${hunt.plays.length}</div>
+            <div style="font-size:11px; opacity:.9">Plays</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.18); border-radius:12px; padding:10px 6px">
+            <div style="font-size:22px; font-weight:700">${Math.round(hunt.plays.filter(p=>p.completed).length/hunt.plays.length*100)}%</div>
+            <div style="font-size:11px; opacity:.9">Completed</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.18); border-radius:12px; padding:10px 6px">
+            <div style="font-size:22px; font-weight:700">${[...new Set(hunt.plays.map(p=>p.playerName).filter(Boolean))].length || 1}</div>
+            <div style="font-size:11px; opacity:.9">Players</div>
+          </div>
+        </div>
+        ` : ''}
       </div>
 
       <div class="section">
@@ -1366,10 +1641,10 @@ function renderHuntDetail(id) {
           ${hunt.plays.slice(-5).reverse().map(p => `
             <div class="card" style="margin-bottom:8px">
               <div class="card-row">
-                <div class="card-emoji" style="background:linear-gradient(135deg,#10b981,#0ea5e9); color:white">🏆</div>
+                <div class="card-emoji" style="background:linear-gradient(135deg,${p.completed ? '#10b981' : '#f59e0b'},${p.completed ? '#0ea5e9' : '#ec4899'}); color:white">${p.completed ? '🏆' : '⏱️'}</div>
                 <div class="card-body">
-                  <h3>Found ${p.foundCount}/${hunt.itemCount}</h3>
-                  <div class="meta">${new Date(p.startedAt).toLocaleString()} • ${formatDur((p.finishedAt||Date.now()) - p.startedAt)}</div>
+                  <h3>${escapeHTML(p.playerName||'Player')} — ${p.foundCount}/${hunt.itemCount} ${p.completed ? '✅' : ''}</h3>
+                  <div class="meta">${new Date(p.startedAt).toLocaleString()} • ${formatDur((p.finishedAt||Date.now()) - p.startedAt)} ${p.difficulty ? `• ${(DIFFICULTIES.find(d=>d.id===p.difficulty)||{}).emoji||''}` : ''}</div>
                 </div>
               </div>
             </div>
@@ -1476,6 +1751,7 @@ function shareTo(target, url, title) {
 /* ---------- Play (gated onboarding + simulated AR) ---------- */
 let playState = null;
 function stopPlay() {
+  if (playState && playState._wsPing) clearInterval(playState._wsPing);
   if (playState && playState.timerId) clearInterval(playState.timerId);
   if (playState && playState.revealLoop) clearInterval(playState.revealLoop);
   if (playState && playState.stream) {
@@ -1485,6 +1761,7 @@ function stopPlay() {
     navigator.geolocation.clearWatch(playState.geoWatchId);
   }
   stopOrientationTracking();
+  wsDisconnect();
   playState = null;
 }
 
@@ -1507,16 +1784,16 @@ function renderPlay(idOrEncoded) {
       ...it, idx: i,
       x: it.position?.x ?? (15 + Math.random()*70),
       y: it.position?.y ?? (25 + Math.random()*55),
+      takenByOther: false,
     })),
-    leaderboard: [
-      { name: 'You',    score: 0, isYou: true },
-      { name: 'Sage',   score: Math.floor(Math.random()*hunt.itemCount*0.4) },
-      { name: 'Zoë',    score: Math.floor(Math.random()*hunt.itemCount*0.4) },
-      { name: 'Quessa', score: Math.floor(Math.random()*hunt.itemCount*0.4) },
-    ],
+    leaderboard: [],       // filled by WebSocket
+    presence: [],          // filled by WebSocket
     timerId: null, stream: null,
     currentOrientation: null, currentGeo: null,
     geoWatchId: null, revealLoop: null,
+    playerName: localStorage.getItem(PLAYER_NAME_KEY) || '',
+    playerId: null,
+    _completed: false,
   };
   // Show onboarding gate first — timer doesn't start until they tap Start Hunt!
   renderPlayOnboarding();
@@ -1541,38 +1818,86 @@ function renderPlayOnboarding() {
   const { hunt, theme } = playState;
   const intro = playerIntroFor(theme, hunt);
   const proxFt = hunt.proximityFt || 5;
+  const savedName = localStorage.getItem(PLAYER_NAME_KEY) || '';
+  const multiAvail = !!WS_URL;
   document.body.innerHTML = `
     <div class="play-onboarding">
       <div class="onboarding-card">
         <div class="invited-line">You've been invited to play</div>
         <h1>${escapeHTML(hunt.title)}</h1>
         <div class="onboarding-emoji">${theme.emoji}</div>
-        <p class="onboarding-tagline">${intro.tagline}</p>
-        <div class="how-to">
-          ${intro.steps.map((s,i) => `<div class="how-step"><span class="how-num">${i+1}</span><span>${s}</span></div>`).join('')}
+
+        ${multiAvail ? `
+        <div style="margin-top:14px">
+          <label class="label" style="color:var(--ink); text-align:left">Your name</label>
+          <input class="input" id="playerNameInput" placeholder="Enter your name" value="${escapeHTML(savedName)}"
+                 maxlength="24" autocomplete="off"
+                 style="text-align:center; font-weight:600; font-size:18px" />
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; justify-content:center">
+            ${['😎 Explorer','🦸 Hero','🧙 Wizard','🕵️ Sleuth','🌟 Star','🎮 Gamer','🐉 Dragon','🦊 Fox'].map(n =>
+              `<button class="btn btn-soft btn-sm" style="font-size:12px; padding:6px 10px"
+                       onclick="quickName('${n}')">${n}</button>`
+            ).join('')}
+          </div>
         </div>
-        <div class="hunt-stats">
-          <div><strong>${hunt.itemCount}</strong>items to find</div>
-          <div><strong>${hunt.timeLimit}</strong>minutes</div>
-          <div><strong>${proxFt}ft</strong>nearby zone</div>
+        ` : ''}
+
+        <div class="start-section">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; text-align:center; margin:16px 0">
+            <div><div style="font-size:24px; font-weight:700">${hunt.itemCount}</div><div style="font-size:12px; color:var(--muted)">Items</div></div>
+            <div><div style="font-size:24px; font-weight:700">${hunt.timeLimit}m</div><div style="font-size:12px; color:var(--muted)">Time limit</div></div>
+          </div>
+          ${intro.steps.slice(0,2).map(s => `<div class="how-step"><span class="how-num">📍</span>${s}</div>`).join('')}
+          <button class="btn btn-primary btn-lg btn-block start-btn" onclick="startHunt()">▶ Start Hunt!</button>
+          ${multiAvail ? '<div class="perms-note">🔗 Connected players see each other\'s progress in real time</div>' : ''}
         </div>
-        <button class="btn start-btn" onclick="startTheHunt()">▶ Start Hunt!</button>
-        <div class="perms-note">Your phone may ask for camera, motion, and location — it needs them to find items in your space. ${hunt.location ? `📍 ${escapeHTML(hunt.location)}` : ''}</div>
-        <button class="btn btn-ghost" style="width:100%; margin-top:8px" onclick="exitPlay()">← Cancel</button>
+      </div>
+      <div class="onboarding-foot">
+        ${escapeHTML(hunt.location || 'Somewhere nearby')} · Created ${new Date(hunt.createdAt).toLocaleDateString()}
+      </div>
+      <div style="text-align:center; margin-top:20px">
+        <button class="btn btn-ghost" onclick="exitPlay()">← Back</button>
       </div>
     </div>
   `;
 }
 
-function startTheHunt() {
+function quickName(name) {
+  const input = document.getElementById('playerNameInput');
+  if (input) { input.value = name; input.focus(); }
+}
+
+function startHunt() {
   if (!playState || playState.started) return;
+  // Capture player name
+  const nameInput = document.getElementById('playerNameInput');
+  const playerName = (nameInput?.value || '').trim() || 'Explorer';
+  playState.playerName = playerName;
+  localStorage.setItem(PLAYER_NAME_KEY, playerName);
+
+  // Apply difficulty modifiers
+  const diff = DIFFICULTIES.find(d => d.id === playState.hunt.difficulty) || DIFFICULTIES[1];
+  playState.difficulty = diff;
+  playState.effectiveProxFt = (playState.hunt.proximityFt || 5) * diff.proxMult;
+  playState.effectiveAngle = 35 * diff.angleMult;
+  playState.effectiveTimeLimit = Math.round(playState.hunt.timeLimit * diff.timeMult);
+
   playState.started = true;
   playState.startedAt = Date.now();
-  playState.deadline  = Date.now() + playState.hunt.timeLimit * 60 * 1000;
-  renderPlayUI();
-  startCamera();
-  startTimer();
-  // Live orientation + geolocation while playing
+  playState.deadline = Date.now() + playState.effectiveTimeLimit * 60 * 1000;
+
+  // Connect to multiplayer
+  wsConnect(playState.huntId, playerName, playState.items.length);
+
+  // Countdown sound, then render UI
+  SoundFX.countdown();
+  setTimeout(() => {
+    if (!playState || !playState.started) return;
+    renderPlayUI();
+    startCamera();
+    startTimer();
+  }, 2000);
+
   startOrientationTracking((o) => { if (playState) playState.currentOrientation = o; });
   if (navigator.geolocation) {
     playState.geoWatchId = navigator.geolocation.watchPosition(
@@ -1580,8 +1905,9 @@ function startTheHunt() {
       () => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
     );
   }
-  // Continuously decide which items are "in view + in range"
   playState.revealLoop = setInterval(updateItemVisibility, 200);
+  // WebSocket keepalive
+  playState._wsPing = setInterval(wsPing, 20_000);
 }
 
 function renderPlayUI() {
@@ -1591,8 +1917,9 @@ function renderPlayUI() {
       <div class="play-header">
         <button class="btn btn-icon btn-soft" onclick="exitPlay()" style="background:rgba(255,255,255,0.18); color:white">✕</button>
         <div class="title">${theme.emoji} ${escapeHTML(hunt.title)}</div>
-        <div class="timer" id="playTimer">${hunt.timeLimit}:00</div>
+        <div class="timer" id="playTimer">${playState.effectiveTimeLimit || hunt.timeLimit}:00</div>
       </div>
+      <div class="presence-bar" id="presenceBar" style="display:none"></div>
       <div class="play-stage" id="playStage">
         <video id="playVideo" autoplay playsinline muted></video>
         <div class="play-fallback" id="playFallback" style="display:none">
@@ -1647,9 +1974,9 @@ function orientationOffset(cur, target) {
 
 function updateItemVisibility() {
   if (!playState || !playState.started) return;
-  const proxFt = playState.hunt.proximityFt || 5;
+  const proxFt = playState.effectiveProxFt || (playState.hunt.proximityFt || 5);
   const proxM = proxFt * 0.3048;
-  const angleTol = 35;   // degrees of view tolerance
+  const angleTol = playState.effectiveAngle || 35;   // degrees of view tolerance
   let anyVisible = false;
   let bestHidden = null; // closest item still hidden (for the hint)
 
@@ -1697,6 +2024,8 @@ function updateItemVisibility() {
       hint.style.opacity = '0';
     } else if (bestHidden) {
       let txt;
+      const distRatio = bestHidden.distM / 15; // 15m ~= 50ft reference
+      SoundFX.proximityPing(Math.min(1, distRatio));
       if (!bestHidden.inRange) {
         txt = bestHidden.distM < 30 ? '🌡️ Getting warm — keep walking…' : '🚶 Walk around to get closer';
       } else if (!bestHidden.inView) {
@@ -1729,11 +2058,30 @@ function renderChecklist() {
 function renderLeaderboard() {
   const lb = document.getElementById('leaderboard');
   if (!lb) return;
-  // bots inch up over time
-  const sorted = [...playState.leaderboard].sort((a,b)=>b.score-a.score);
-  lb.innerHTML = `<div class="lh">Leaderboard</div>` + sorted.map(r => `
-    <div class="lr ${r.isYou?'you':''}"><span>${escapeHTML(r.name)}</span><span>${r.score}</span></div>
-  `).join('');
+  const entries = playState.leaderboard || [];
+  lb.innerHTML = `<div class="lh">Leaderboard</div>` +
+    entries.map(r => `
+    <div class="lr ${(r.id === playState.playerId || r.name === (playState.playerName||'You')) ? 'you' : ''}">
+      <span>${r.name === playState.playerName ? '⭐ ' : ''}${escapeHTML(r.name || '?')}</span>
+      <span>${r.score ?? r.found ?? 0}</span>
+    </div>
+  `).join('') +
+    (entries.length === 0 ? `<div style="padding:8px; opacity:0.6; font-size:12px">Waiting for players…</div>` : '');
+}
+
+function renderPresence() {
+  const el = document.getElementById('presenceBar');
+  if (!el) return;
+  const p = playState.presence || [];
+  if (p.length <= 1) {
+    el.style.display = 'none';
+    return;
+  }
+  el.style.display = 'flex';
+  el.innerHTML = p.map(pl =>
+    `<span class="presence-dot" style="background:${pl.id === playState.playerId ? 'var(--accent)' : 'var(--sky)'}"
+          title="${escapeHTML(pl.name)}">${pl.name[0]}</span>`
+  ).join('');
 }
 
 function placeArItems() {
@@ -1755,26 +2103,41 @@ function placeArItems() {
 
 function collectItem(idx) {
   if (!playState || playState.found.has(idx)) return;
+  const it = playState.items[idx];
+  if (it && it.takenByOther) return; // someone else got it first
   playState.found.add(idx);
   const el = document.getElementById('ar-' + idx);
   if (el) {
     el.classList.add('found');
     setTimeout(() => el.remove(), 300);
   }
-  // reward you on the leaderboard
-  playState.leaderboard.find(r => r.isYou).score = playState.found.size;
-  // bots inch up sometimes
-  playState.leaderboard.filter(r => !r.isYou).forEach(r => {
-    if (Math.random() < 0.45 && r.score < playState.items.length-1) r.score++;
-  });
+  // Broadcast to multiplayer
+  wsCollect(idx);
+  // Sound + photo
+  SoundFX.collect();
+  const photo = capturePhoto();
+  if (photo) {
+    playState.photos = playState.photos || [];
+    playState.photos.push({ idx, emoji: playState.items[idx].emoji, dataUrl: photo });
+  }
+  // Update local leaderboard
+  playState.leaderboard = playState.leaderboard.map(r =>
+    r.id === playState.playerId ? { ...r, score: playState.found.size, found: playState.found.size } : r
+  );
+  // If no multiplayer, maintain local solo leaderboard
+  if (!ws) {
+    if (!playState.leaderboard.length) {
+      playState.leaderboard = [{ id: 'solo', name: playState.playerName || 'You', score: playState.found.size, found: playState.found.size }];
+    }
+  }
   renderChecklist();
   renderLeaderboard();
   showBanner(`+1 — ${playState.items[idx].emoji}`);
-  // small celebration confetti
   if (window.confetti) {
     confetti({ particleCount: 35, spread: 60, startVelocity: 30, origin: { y: 0.6 }, scalar: 0.7 });
   }
   if (playState.found.size >= playState.items.length) {
+    SoundFX.fanfare();
     setTimeout(() => finishPlay(true), 400);
   }
 }
@@ -1832,15 +2195,21 @@ function finishPlay(allFound) {
   const startedAt = playState.startedAt;
   const foundCount = playState.found.size;
   const finishedAt = Date.now();
-  // save play record
+  // save play record with rich analytics
   const hunt = getHunt(id);
   if (hunt) {
     hunt.plays = hunt.plays || [];
-    hunt.plays.push({ startedAt, finishedAt, foundCount });
+    hunt.plays.push({
+      startedAt, finishedAt, foundCount,
+      playerName: playState.playerName || 'Player',
+      completed: allFound,
+      difficulty: playState.hunt.difficulty || 'medium',
+    });
     upsertHunt(hunt);
   }
+  // Stash photos for celebration (too large for URL)
+  window._lastCelebrationPhotos = playState.photos || [];
   stopPlay();
-  // restore the app shell wrapper — reassign the `app` variable, not just window.app
   document.body.innerHTML = '<div id="app"></div>';
   app = document.getElementById('app');
   navigate('#/celebrate/' + id + '?found=' + foundCount + '&dur=' + (finishedAt - startedAt));
@@ -1871,6 +2240,22 @@ function renderCelebrate(idAndQuery) {
   if (!hunt) { navigate('#/home'); return; }
   const allFound = found != null && found >= hunt.itemCount;
   const theme = getTheme(hunt.themeId);
+  const photos = window._lastCelebrationPhotos || [];
+  window._lastCelebrationPhotos = null;
+
+  const photoGallery = photos.length > 0 ? `
+    <div class="section" style="text-align:center">
+      <h2 style="color:var(--ink)">📸 Your Hunt Photos</h2>
+      <div style="display:flex; gap:8px; overflow-x:auto; padding:8px 0; -webkit-overflow-scrolling:touch">
+        ${photos.map(p => `
+          <div style="flex:none; width:160px; border-radius:16px; overflow:hidden; box-shadow:var(--shadow-md); background:var(--card)">
+            <img src="${p.dataUrl}" style="width:100%; height:120px; object-fit:cover; display:block" alt="Photo of ${p.emoji}" />
+            <div style="padding:8px; font-size:14px; text-align:center">${p.emoji} Found!</div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  ` : '';
 
   app.innerHTML = `
     <div class="page celebrate">
@@ -1885,6 +2270,7 @@ function renderCelebrate(idAndQuery) {
         <div class="stat"><div class="n">${formatDur(dur || 0)}</div><div class="l">Time</div></div>
         <div class="stat"><div class="n">${theme.emoji}</div><div class="l">${theme.name}</div></div>
       </div>
+      ${photoGallery}
       <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:18px;">
         <button class="btn btn-primary btn-lg" onclick="navigate('#/play/${hunt.id}')">▶ Play Again</button>
         <button class="btn btn-soft btn-lg" onclick="navigate('#/share/${hunt.id}')">🔗 Share Hunt</button>
